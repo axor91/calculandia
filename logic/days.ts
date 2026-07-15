@@ -20,8 +20,8 @@ export function parseDate(input: string): Date | null {
 
 export function formatDateISO(d: Date): string {
   const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 }
 
@@ -100,29 +100,47 @@ function diffInDays(a: Date, b: Date, includeEnd: boolean): number {
   return includeEnd ? diff + (diff >= 0 ? 1 : -1) : diff;
 }
 
-function diffWorkingDays(a: Date, b: Date, includeEnd: boolean, useRuHolidays: boolean): number {
+function diffWorkingDays(
+  a: Date,
+  b: Date,
+  includeEnd: boolean,
+  useRuHolidays: boolean,
+): number {
   const step = a <= b ? 1 : -1;
   let current = startOfDay(a);
-  let end = startOfDay(b);
+  const end = startOfDay(b);
   let count = 0;
   while (true) {
-    if (includeEnd ? (step > 0 ? current > end : current < end) : current.getTime() === end.getTime()) break;
+    if (
+      includeEnd
+        ? step > 0
+          ? current > end
+          : current < end
+        : current.getTime() === end.getTime()
+    )
+      break;
     if (includeEnd) {
       // include both ends
-      if ((useRuHolidays ? isWorkingDayRU(current) : isWorkingDay(current))) count++;
+      if (useRuHolidays ? isWorkingDayRU(current) : isWorkingDay(current))
+        count++;
       current = addToDate(current, 0, 0, step);
       if (step > 0 ? current > end : current < end) break;
     } else {
       // exclude end
       current = addToDate(current, 0, 0, step);
-      if ((useRuHolidays ? isWorkingDayRU(current) : isWorkingDay(current))) count++;
+      if (useRuHolidays ? isWorkingDayRU(current) : isWorkingDay(current))
+        count++;
       if (current.getTime() === end.getTime()) break;
     }
   }
   return Math.abs(count);
 }
 
-function diffMonthsAndDays(a: Date, b: Date, includeEnd: boolean): { months: number; days: number } {
+function diffMonthsAndDays(
+  a: Date,
+  b: Date,
+  includeEnd: boolean,
+): { months: number; days: number } {
   const dir = a <= b ? 1 : -1;
   let start = new Date(a);
   let months = 0;
@@ -136,7 +154,11 @@ function diffMonthsAndDays(a: Date, b: Date, includeEnd: boolean): { months: num
   return { months: Math.abs(months), days: Math.abs(days) };
 }
 
-function diffYMD(a: Date, b: Date, includeEnd: boolean): { years: number; months: number; days: number } {
+function diffYMD(
+  a: Date,
+  b: Date,
+  includeEnd: boolean,
+): { years: number; months: number; days: number } {
   const dir = a <= b ? 1 : -1;
   let start = new Date(a);
   let years = 0;
@@ -150,9 +172,16 @@ function diffYMD(a: Date, b: Date, includeEnd: boolean): { years: number; months
   return { years: Math.abs(years), months: md.months, days: md.days };
 }
 
-export function diffDates(a: Date, b: Date, includeEnd: boolean, useRuHolidays = false): DateDiffResult {
+export function diffDates(
+  a: Date,
+  b: Date,
+  includeEnd: boolean,
+  useRuHolidays = false,
+): DateDiffResult {
   const totalDays = Math.abs(diffInDays(a, b, includeEnd));
-  const workingDays = Math.abs(diffWorkingDays(a, b, includeEnd, useRuHolidays));
+  const workingDays = Math.abs(
+    diffWorkingDays(a, b, includeEnd, useRuHolidays),
+  );
   const weeks = { weeks: Math.floor(totalDays / 7), days: totalDays % 7 };
   const md = diffMonthsAndDays(a, b, includeEnd);
   const ymd = diffYMD(a, b, includeEnd);
@@ -160,14 +189,27 @@ export function diffDates(a: Date, b: Date, includeEnd: boolean, useRuHolidays =
 }
 
 // Подсчёт рабочих дней при наличии набора НЕрабочих дат (ISO yyyy-mm-dd)
-export function countWorkingDaysWithSet(a: Date, b: Date, includeEnd: boolean, nonWorkingISO: Set<string>): number {
+export function countWorkingDaysWithSet(
+  a: Date,
+  b: Date,
+  includeEnd: boolean,
+  nonWorkingISO: Set<string>,
+): number {
   const step = a <= b ? 1 : -1;
   let current = startOfDay(a);
   const end = startOfDay(b);
   let count = 0;
-  const isWorkingBySet = (d: Date) => isWorkingDay(d) && !nonWorkingISO.has(formatDateISO(d));
+  const isWorkingBySet = (d: Date) =>
+    isWorkingDay(d) && !nonWorkingISO.has(formatDateISO(d));
   while (true) {
-    if (includeEnd ? (step > 0 ? current > end : current < end) : current.getTime() === end.getTime()) break;
+    if (
+      includeEnd
+        ? step > 0
+          ? current > end
+          : current < end
+        : current.getTime() === end.getTime()
+    )
+      break;
     if (includeEnd) {
       if (isWorkingBySet(current)) count++;
       current = addToDate(current, 0, 0, step);
@@ -180,5 +222,3 @@ export function countWorkingDaysWithSet(a: Date, b: Date, includeEnd: boolean, n
   }
   return Math.abs(count);
 }
-
-

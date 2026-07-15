@@ -4,21 +4,18 @@
 
 ## Текущий статус
 
-Baseline `1701533` сохранён как known-broken исходное состояние. Проект проходит подготовку к первому production-релизу; текущий `master` нельзя разворачивать до закрытия release gates.
+Baseline `1701533` сохранён как known-broken исходное состояние. В рабочей ветке P0 toolchain уже проходит lint/type/test/build, но существующие формулы ещё не прошли launch correctness gate; production deploy разрешён только после полного release DoD.
 
 Актуальная документация и принятые решения: [`docs/README.md`](docs/README.md).
 
-## Локальный baseline
+## Локальная проверка
 
 ```bash
 npm ci
-npm test
-npx tsc --noEmit
-npm run lint
-npm run build
+npm run check
+npm run test:coverage
 ```
 
-В baseline часть команд намеренно завершается ошибкой; точные результаты находятся в production readiness audit. README будет обновляться вместе с toolchain и production runbook.
+`npm run check` выполняет lint, typecheck, unit tests, production dependency gate и production build. Две moderate build-time уязвимости nested PostCSS документированы временным exception; high/critical блокируют gate.
 
-Не копируйте `.env` в репозиторий. Публичный launch runtime по ADR-0001 не требует БД.
-
+Скопируйте `.env.example` только в локальный ignored `.env.local` и не коммитьте секреты. Публичный launch runtime по ADR-0001 не требует БД.

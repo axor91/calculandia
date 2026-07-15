@@ -25,6 +25,7 @@ Baseline исходного проекта зафиксирован коммит
 9. [`security/threat-model-and-privacy.md`](security/threat-model-and-privacy.md) — trust boundaries, данные, угрозы и телеметрия.
 10. [`implementation/status.md`](implementation/status.md) — текущие gates и внешние блокеры.
 11. [`reviews/2026-07-15-documentation-gate.md`](reviews/2026-07-15-documentation-gate.md) — замечания независимого ревью и принятые решения.
+12. [`security/dependency-exceptions.md`](security/dependency-exceptions.md) — ограниченные по сроку dependency exceptions и reachability.
 
 ## Принятые решения
 

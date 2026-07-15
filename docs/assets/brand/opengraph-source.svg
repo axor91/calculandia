@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Calculandia</title>
+  <desc id="desc">Понятные онлайн-калькуляторы</desc>
+  <rect width="1200" height="630" fill="#f7f7f5"/>
+  <rect x="72" y="72" width="1056" height="486" fill="#ffffff" stroke="#d8d8d2" stroke-width="2"/>
+  <rect x="132" y="135" width="96" height="96" fill="#171717"/>
+  <text x="180" y="202" text-anchor="middle" font-family="Arial, sans-serif" font-size="62" font-weight="700" fill="#ffffff">=</text>
+  <text x="270" y="194" font-family="Arial, sans-serif" font-size="64" font-weight="700" fill="#171717">Calculandia</text>
+  <text x="132" y="326" font-family="Arial, sans-serif" font-size="50" font-weight="700" fill="#171717">Понятные онлайн-калькуляторы</text>
+  <text x="132" y="394" font-family="Arial, sans-serif" font-size="30" fill="#5b5b55">Формулы, примеры и объяснение результата</text>
+  <line x1="132" y1="464" x2="1068" y2="464" stroke="#d8d8d2" stroke-width="2"/>
+  <text x="132" y="510" font-family="Arial, sans-serif" font-size="24" fill="#70706a">calculandia.ru</text>
+</svg>

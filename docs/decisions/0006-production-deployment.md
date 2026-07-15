@@ -16,13 +16,14 @@
 ## Решение
 
 - Runtime/build: одинаковый поддерживаемый Node `22.22.2`, установленный side-by-side в `/opt/nodejs/node-v22.22.2-linux-x64`; глобальный Node 20 и существующие PM2-приложения не изменяются.
-- Bind: `127.0.0.1:3212`; PM2 запускает standalone server с явным Node 22 interpreter path.
-- Process manager: PM2, один процесс на launch; cluster только после измерения.
+- Bind: `127.0.0.1:3212`; отдельный system user `calculandia` запускает PM2/standalone с явным Node 22 interpreter path и собственным `PM2_HOME`.
+- Process manager: PM2, один непривилегированный процесс на launch; cluster только после измерения.
 - Releases: `/var/www/calculandia/releases/{git-sha}`.
 - Active symlink: `/var/www/calculandia/current`.
-- Shared secrets: `/var/www/calculandia/shared/.env.production.local`, mode `0600`.
+- Release ownership: `root:root`; directories `0555`, files `0444`; runtime user не может изменить release или `current`.
+- Artifact identity: `.next/BUILD_ID` равен clean Git SHA, `ARTIFACT.sha256` покрывает каждый файл; runtime env не задаёт version.
 - Reverse proxy/TLS: nginx/FastPanel, canonical host `calculandia.ru`, Let's Encrypt/ACME certificate.
-- Deployment: build/test локально и/или в CI, transfer immutable standalone artifact, healthcheck, atomic symlink switch, PM2 reload.
+- Deployment: build/test локально и/или в CI, full-file streaming secret scan, manifest verification, transfer immutable standalone artifact, negative write probe от runtime user, healthcheck, atomic symlink switch, PM2 reload.
 - Rollback: switch symlink to previous healthy artifact and reload PM2.
 - Database migration step отсутствует, потому что launch runtime не использует БД.
 

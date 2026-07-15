@@ -15,11 +15,12 @@
 - Модульный монолит Next.js; микросервисы, Redis и очереди не используются.
 - Публичный runtime не зависит от PostgreSQL/Prisma.
 - Каталог и контент типизированы и хранятся в Git.
-- Admin/login/write API отсутствуют в production bundle.
+- Admin/login и content-management write API отсутствуют в production bundle.
 - Произвольный HTML, script-реклама и arbitrary JSON-LD отсутствуют.
 - Product analytics, Replay и реклама выключены.
 - Рабочие дни РФ и solver уравнений не публикуются.
 - Формулы выполняются в браузере; пользовательские значения не отправляются серверу.
+- Единственный launch POST endpoint принимает только same-origin JSON allowlist-событие технической ошибки без message, stack, query, fragment и значений полей; тело ограничено 1 KiB, частота — 10 принятых событий в минуту на client bucket и 300 в минуту на процесс.
 - Deploy target — проверенный сервер `203.0.113.20`, nginx/FastPanel + PM2 + Next standalone на side-by-side Node 22.22.2.
 
 Нормативные ADR перечислены в [`../README.md`](../README.md).
@@ -169,7 +170,7 @@ Threat model: [`../security/threat-model-and-privacy.md`](../security/threat-mod
 Обязательные controls:
 
 - dependencies pinned lockfile, audit/exception policy;
-- env validation; launch требует только canonical origin и optional error DSN/release;
+- canonical production origin фиксирован; release identity берётся только из Git-bound `.next/BUILD_ID`, а не runtime env;
 - одна CSP, совместимая со статическим рендером;
 - `frame-ancestors 'none'`, `object-src 'none'`, strict referrer/permissions policy;
 - никакого user HTML/eval/ad scripts;
@@ -222,7 +223,7 @@ npm ci
 → dependency/license checks
 → E2E against standalone artifact
 → Lighthouse/link/schema checks
-→ immutable artifact
+→ Git-bound BUILD_ID + full SHA-256 manifest + read-only artifact
 → staging smoke
 → production atomic deploy
 → post-deploy smoke/rollback
@@ -234,16 +235,16 @@ npm ci
 
 Оценки являются forecast, а не quality deadline. Они предполагают автономную реализацию с параллельными review-потоками; внешний доступ к DNS/репозиторию может изменить календарное время.
 
-| Workstream | Зависит от | Optimistic | Expected | Pessimistic | Gate |
-|---|---|---:|---:|---:|---|
-| Документы/ADR/baseline | — | 0.5 д | 1 д | 2 д | Documentation review approved |
-| P0 toolchain/security | baseline | 1 д | 2 д | 4 д | green install/lint/type/test/build/audit policy |
-| Catalog/routes/platform | P0 | 1.5 д | 3 д | 5 д | registry/SEO/redirect tests |
-| Design system/shell/search | catalog contract | 1.5 д | 3 д | 5 д | responsive/a11y component gate |
-| Existing formula correction | quality spec | 1 д | 2 д | 4 д | independent golden review |
-| 10 new launch tools/content | shell + quality spec | 3 д | 6 д | 10 д | all 14 page DoD |
-| E2E/performance/security | integrated site | 1.5 д | 3 д | 5 д | release candidate review |
-| Server/TLS/deploy/verification | artifact + access | 1 д | 2 д | 4 д | production smoke + rollback |
+| Workstream                     | Зависит от           | Optimistic | Expected | Pessimistic | Gate                                            |
+| ------------------------------ | -------------------- | ---------: | -------: | ----------: | ----------------------------------------------- |
+| Документы/ADR/baseline         | —                    |      0.5 д |      1 д |         2 д | Documentation review approved                   |
+| P0 toolchain/security          | baseline             |        1 д |      2 д |         4 д | green install/lint/type/test/build/audit policy |
+| Catalog/routes/platform        | P0                   |      1.5 д |      3 д |         5 д | registry/SEO/redirect tests                     |
+| Design system/shell/search     | catalog contract     |      1.5 д |      3 д |         5 д | responsive/a11y component gate                  |
+| Existing formula correction    | quality spec         |        1 д |      2 д |         4 д | independent golden review                       |
+| 10 new launch tools/content    | shell + quality spec |        3 д |      6 д |        10 д | all 14 page DoD                                 |
+| E2E/performance/security       | integrated site      |      1.5 д |      3 д |         5 д | release candidate review                        |
+| Server/TLS/deploy/verification | artifact + access    |        1 д |      2 д |         4 д | production smoke + rollback                     |
 
 При параллельной работе expected critical path: **12–18 рабочих дней**; optimistic: 8–10; pessimistic: 20–30 при существенном rework/внешних блокерах. Предыдущая неподтверждённая оценка 7–10 дней отменена.
 
