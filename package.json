@@ -24,6 +24,7 @@
     "audit:prod": "npm audit --omit=dev --audit-level=high",
     "artifact:prepare": "node scripts/prepare-standalone.mjs",
     "artifact:verify": "node scripts/verify-standalone.mjs",
+    "artifact:verify-uploaded": "node scripts/verify-uploaded-artifact.mjs",
     "release:verify": "node scripts/verify-release-ready.mjs",
     "test:artifact-tools": "node scripts/test-artifact-tools.mjs",
     "smoke:standalone": "node scripts/smoke-standalone.mjs",
