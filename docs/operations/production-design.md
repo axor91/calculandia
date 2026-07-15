@@ -1,6 +1,6 @@
 # Production design и runbook
 
-- Статус: **Approved design; release candidate и production evidence в работе**
+- Статус: **Release candidate approved; valid-TLS holding active; public launch blocked by legal/operator input**
 - Target: `calculandia.ru` / `203.0.113.20`
 
 ## 1. Подтверждено
@@ -9,8 +9,8 @@
 - nginx активен и управляет FastPanel sites.
 - Глобальный Node `v20.20.2`, PM2 7 используются существующими приложениями. Node 20 уже EOL и не выбирается для Calculandia.
 - PostgreSQL и Redis существуют на сервере, но Calculandia launch их не использует.
-- Порты `3212` и `3213` свободны по повторной проверке 2026-07-16.
-- Домен пока не имеет отдельного FastPanel nginx site и отвечает parking/default page.
+- `127.0.0.1:3212` занят healthy Calculandia process; candidate port `3213` после проверки освобождён.
+- Домен имеет отдельный holding vhost с валидным TLS и отвечает `503 + noindex`, пока production proxy не утверждён.
 - Node `22.22.2` установлен side-by-side с проверкой официального SHA-256; созданы непривилегированный user `calculandia` и изолированные release/state directories.
 - В репозитории зафиксированы проверяемые nginx/PM2/logrotate templates и fail-closed activate/rollback scripts в `ops/`.
 
@@ -44,6 +44,7 @@ Calculandia build/runtime используют Node `22.22.2` из `/opt/nodejs/
 - bind: `127.0.0.1:3212`;
 - PM2 name: `calculandia-web`;
 - OS user: `calculandia`, shell disabled; `PM2_HOME=/var/lib/calculandia/.pm2`;
+- boot persistence: dedicated hardened `calculandia-pm2.service`, не общий root PM2 daemon;
 - interpreter: `/opt/nodejs/node-v22.22.2-linux-x64/bin/node`;
 - initial instances: 1;
 - memory restart threshold задаётся после измерения, initial 512 MiB;
@@ -64,6 +65,8 @@ Calculandia build/runtime используют Node `22.22.2` из `/opt/nodejs/
 - custom 502 не маскируется как 200.
 
 TLS: ACME/Let's Encrypt с автоматическим renew и проверкой `nginx -t`. Сертификат покрывает apex и `www`, даже если `www` только redirect.
+
+До legal/operator approval точный vhost может находиться только в holding-state: валидный TLS, `503 + Retry-After + X-Robots-Tag: noindex`; приложение при этом доступно лишь на loopback. Parking `200` не используется как ложный сигнал готовности.
 
 ## 5. Deployment sequence
 
@@ -120,7 +123,7 @@ Minimum monitoring:
 - disk/memory alerts;
 - sanitized structured server/client-boundary error logs без пользовательских значений.
 
-30-минутный interval удерживает scheduled private-repository job в пределах базовой GitHub Actions quota; переход на 1–5 минут требует отдельного внешнего provider или утверждённого бюджета. PM2 обеспечивает немедленный local restart, а deploy выполняет синхронный external smoke. Перед launch вручную запускается failure simulation и подтверждается красный workflow; затем success run на production. Неактивный remote monitor является release blocker.
+30-минутный interval удерживает scheduled private-repository job в пределах базовой GitHub Actions quota; переход на 1–5 минут требует отдельного внешнего provider или утверждённого бюджета. PM2 обеспечивает немедленный local restart, а deploy выполняет синхронный external smoke. Scheduled job активируется только repository variable `PRODUCTION_MONITOR_ENABLED=true` и требует точного `PRODUCTION_RELEASE_SHA`; до launch он intentionally skipped. Перед launch вручную запускается failure simulation и подтверждается красный workflow; затем success run на production. Неактивный remote monitor является release blocker.
 
 ## 8. RTO/RPO/SLO
 
@@ -132,10 +135,9 @@ Minimum monitoring:
 
 ## 9. Git repository и release provenance
 
-Создан private repository `github.com/axor91/calculandia`, remote `origin` настроен. До release остаются:
+Создан private repository `github.com/axor91/calculandia`, remote `origin` настроен, baseline и release candidate опубликованы в `main`. До production release остаются:
 
-- переименование локальной baseline-ветки `master` в `main` до первого push;
-- успешный обязательный CI workflow на clean release commit;
+- успешный обязательный CI workflow на финальный policy/ops commit;
 - проверка доступности branch protection для текущего GitHub plan;
 - сохранение production SHA, идентичного remote commit, `.next/BUILD_ID` и release directory.
 

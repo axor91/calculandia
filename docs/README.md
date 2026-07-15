@@ -29,6 +29,8 @@ Baseline исходного проекта зафиксирован коммит
 12. [`security/dependency-exceptions.md`](security/dependency-exceptions.md) — ограниченные по сроку dependency exceptions и reachability.
 13. [`reviews/2026-07-16-implementation-gates.md`](reviews/2026-07-16-implementation-gates.md) — findings и повторные ревью foundation, 14 калькуляторов, UX и release engineering.
 14. [`research/2026-07-16-visual-implementation-review.md`](research/2026-07-16-visual-implementation-review.md) — viewport/browser evidence реализованного интерфейса.
+15. [`legal/production-privacy-checklist.md`](legal/production-privacy-checklist.md) — фактический data flow, обязательные данные оператора и legal Production Gate.
+16. [`operations/2026-07-16-preproduction-evidence.md`](operations/2026-07-16-preproduction-evidence.md) — remote CI, immutable server candidate, process isolation, boot и TLS/holding evidence.
 
 ## Принятые решения
 

@@ -122,18 +122,25 @@ pm2_command=(
   "$node" "$pm2"
 )
 
-if ! "${pm2_command[@]}" startOrReload "$pm2_config" --only calculandia-web --update-env; then
+pm2_run() {
+  (
+    cd /var/lib/calculandia
+    "${pm2_command[@]}" "$@"
+  )
+}
+
+if ! pm2_run startOrReload "$pm2_config" --only calculandia-web --update-env; then
   if [[ -n $previous && -d $previous ]]; then
     fallback="$app_root/.rollback-$sha"
     ln -s "releases/$(basename "$previous")" "$fallback"
     mv -Tf "$fallback" "$app_root/current"
   else
     rm -f "$app_root/current"
-    "${pm2_command[@]}" delete calculandia-web >/dev/null 2>&1 || true
+    pm2_run delete calculandia-web >/dev/null 2>&1 || true
   fi
   exit 1
 fi
-"${pm2_command[@]}" save
+pm2_run save
 
 for _ in $(seq 1 60); do
   health=$(curl --silent --show-error --max-time 2 \
@@ -151,11 +158,11 @@ if [[ -n $previous && -d $previous ]]; then
   rm -f "$fallback"
   ln -s "releases/$(basename "$previous")" "$fallback"
   mv -Tf "$fallback" "$app_root/current"
-  "${pm2_command[@]}" restart calculandia-web --update-env
-  "${pm2_command[@]}" save
+  pm2_run restart calculandia-web --update-env
+  pm2_run save
 else
   rm -f "$app_root/current"
-  "${pm2_command[@]}" delete calculandia-web >/dev/null 2>&1 || true
-  "${pm2_command[@]}" save
+  pm2_run delete calculandia-web >/dev/null 2>&1 || true
+  pm2_run save
 fi
 exit 1
