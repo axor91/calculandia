@@ -1,0 +1,64 @@
+// Prisma схема для базы данных Calculandia
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Калькулятор
+model Calculator {
+  id          String   @id
+  slug        String?  @unique
+  name        String
+  category    String
+  description String
+  component   String
+  
+  // SEO
+  seoTitle       String
+  seoDescription String
+  seoKeywords    String // JSON массив в строке
+  seoRobots      String? @default("index,follow")
+  
+  // Контент
+  contentBefore String?
+  contentAfter  String?
+  faq           String? // JSON массив в строке
+  
+  // Реклама
+  adsTopEnabled       Boolean @default(false)
+  adsTopCode          String?
+  adsSidebarEnabled   Boolean @default(false)
+  adsSidebarCode      String?
+  adsBottomEnabled    Boolean @default(false)
+  adsBottomCode       String?
+
+  // Микроразметка / structured data
+  schemaTypes String?
+  schemaExtra String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Категория
+model Category {
+  id          String @id
+  name        String
+  description String?
+  icon        String?
+}
+
+// Нерабочие/рабочие дни РФ на конкретную дату (кеш из isdayoff)
+model RuHoliday {
+  date       DateTime @id
+  year       Int
+  isWorking  Boolean
+  source     String?
+  updatedAt  DateTime @updatedAt
+}
+
