@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+if [[ ${EUID} -ne 0 ]]; then
+  echo "rollback-release must run as root" >&2
+  exit 1
+fi
+
+sha=${1:-}
+if [[ ! $sha =~ ^[0-9a-f]{40}$ ]]; then
+  echo "Usage: $0 <40-character-git-sha>" >&2
+  exit 1
+fi
+
+app_root=/var/www/calculandia
+release="$app_root/releases/$sha"
+node=/opt/nodejs/node-v22.22.2-linux-x64/bin/node
+pm2=/usr/lib/node_modules/pm2/bin/pm2
+
+[[ -d $release ]] || { echo "Release not found: $release" >&2; exit 1; }
+[[ $(tr -d '\r\n' < "$release/.next/BUILD_ID") == "$sha" ]] || {
+  echo "BUILD_ID does not match release directory" >&2
+  exit 1
+}
+
+temporary_link="$app_root/.rollback-$sha"
+rm -f "$temporary_link"
+ln -s "releases/$sha" "$temporary_link"
+mv -Tf "$temporary_link" "$app_root/current"
+
+runuser -u calculandia -- env \
+  HOME=/var/lib/calculandia \
+  PM2_HOME=/var/lib/calculandia/.pm2 \
+  "$node" "$pm2" restart calculandia-web --update-env
+runuser -u calculandia -- env \
+  HOME=/var/lib/calculandia \
+  PM2_HOME=/var/lib/calculandia/.pm2 \
+  "$node" "$pm2" save
+
+health=$(curl --fail --silent --show-error --max-time 5 \
+  http://127.0.0.1:3212/healthz)
+[[ $health == *"\"version\":\"$sha\""* ]] || {
+  echo "Rollback identity check failed" >&2
+  exit 1
+}
+echo "Rolled back to healthy release $sha"

@@ -19,29 +19,32 @@ export default function GlobalError({
   }, [error.digest]);
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white border-2 border-neutral-300 p-8 text-center">
-        <div className="w-16 h-16 mx-auto mb-4 bg-red-100 flex items-center justify-center">
-          <span className="text-3xl">⚠️</span>
-        </div>
-        <h2 className="text-xl font-bold text-neutral-900 mb-2">
+    <main
+      id="main-content"
+      className="flex flex-1 items-center justify-center px-4 py-20"
+    >
+      <div className="w-full max-w-md rounded-[24px] border border-line bg-white p-8 text-center">
+        <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-danger">
+          Техническая ошибка
+        </p>
+        <h1 className="mt-3 text-2xl font-black tracking-[-0.03em] text-ink">
           Что-то пошло не так
-        </h2>
-        <p className="text-neutral-600 text-sm mb-6">
+        </h1>
+        <p className="mb-6 mt-3 text-sm leading-6 text-muted">
           Произошла непредвиденная ошибка. Пожалуйста, попробуйте ещё раз.
         </p>
         {error.digest && (
-          <p className="text-xs text-neutral-400 mb-4 font-mono">
+          <p className="mb-4 font-mono text-xs text-muted">
             ID: {error.digest}
           </p>
         )}
         <button
           onClick={reset}
-          className="px-6 py-3 border-2 border-neutral-900 text-neutral-900 font-semibold hover:bg-neutral-900 hover:text-white transition-colors"
+          className="min-h-11 rounded-xl bg-teal px-6 py-3 font-bold text-white hover:bg-teal-dark"
         >
           Попробовать снова
         </button>
       </div>
-    </div>
+    </main>
   );
 }

@@ -92,16 +92,16 @@ SHA-256 baseline `package-lock.json`: `5e5dfa1f630b8540bdde43af8e2b6975a174d2359
 
 ## 4. Результаты автоматических проверок
 
-| Проверка | Результат | Статус |
-|---|---|---|
-| `npm ci` | Установлено 436 пакетов | Выполнено |
-| `npm test` | 80 из 81 теста прошли | Ошибка |
-| `npx tsc --noEmit` | 2 ошибки типов | Ошибка |
-| `npm run lint` | ESLint не установлен; `next lint` устаревает | Ошибка |
-| `npm run build` | Webpack-компиляция проходит, typecheck завершает build ошибкой | Ошибка |
-| `npx prisma validate` | Схема валидна | Успех |
-| `npx prisma migrate status` | P1000: ошибка аутентификации PostgreSQL | Ошибка |
-| `npm audit --omit=dev` | 41 production-уязвимость: 1 critical, 12 high, 26 moderate, 2 low | Ошибка |
+| Проверка                    | Результат                                                         | Статус    |
+| --------------------------- | ----------------------------------------------------------------- | --------- |
+| `npm ci`                    | Установлено 436 пакетов                                           | Выполнено |
+| `npm test`                  | 80 из 81 теста прошли                                             | Ошибка    |
+| `npx tsc --noEmit`          | 2 ошибки типов                                                    | Ошибка    |
+| `npm run lint`              | ESLint не установлен; `next lint` устаревает                      | Ошибка    |
+| `npm run build`             | Webpack-компиляция проходит, typecheck завершает build ошибкой    | Ошибка    |
+| `npx prisma validate`       | Схема валидна                                                     | Успех     |
+| `npx prisma migrate status` | P1000: ошибка аутентификации PostgreSQL                           | Ошибка    |
+| `npm audit --omit=dev`      | 41 production-уязвимость: 1 critical, 12 high, 26 moderate, 2 low | Ошибка    |
 
 ### 4.1 Конкретные ошибки
 

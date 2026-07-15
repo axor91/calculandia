@@ -37,6 +37,9 @@ Thumbs.db
 
 # Test coverage
 coverage/
+test-results/
+playwright-report/
+blob-report/
 
 # TypeScript
 *.tsbuildinfo
@@ -48,3 +51,4 @@ next-env.d.ts
 
 # Local release artifacts
 artifacts/
+.lighthouseci/

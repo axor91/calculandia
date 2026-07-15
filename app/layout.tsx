@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import SiteFooter from "@/components/site/SiteFooter";
+import SiteHeader from "@/components/site/SiteHeader";
+import JsonLd from "@/components/site/JsonLd";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -10,7 +13,6 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   authors: [{ name: "Calculandia" }],
-  alternates: { canonical: "/" },
   openGraph: {
     title: "Онлайн-калькуляторы — Calculandia",
     description: siteConfig.description,
@@ -31,7 +33,31 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <body className="flex min-h-dvh flex-col">
+        <a href="#main-content" className="skip-link">
+          Перейти к содержанию
+        </a>
+        <JsonLd
+          data={[
+            {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: siteConfig.name,
+              url: siteConfig.origin,
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: siteConfig.name,
+              url: siteConfig.origin,
+              inLanguage: "ru-RU",
+            },
+          ]}
+        />
+        <SiteHeader />
+        {children}
+        <SiteFooter />
+      </body>
     </html>
   );
 }

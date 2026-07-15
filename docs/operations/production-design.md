@@ -1,6 +1,6 @@
 # Production design и runbook
 
-- Статус: **Approved design; команды уточняются по фактической конфигурации при deploy**
+- Статус: **Approved design; release candidate и production evidence в работе**
 - Target: `calculandia.ru` / `5.188.28.98`
 
 ## 1. Подтверждено
@@ -9,8 +9,10 @@
 - nginx активен и управляет FastPanel sites.
 - Глобальный Node `v20.20.2`, PM2 7 используются существующими приложениями. Node 20 уже EOL и не выбирается для Calculandia.
 - PostgreSQL и Redis существуют на сервере, но Calculandia launch их не использует.
-- Порт `3212` был свободен 2026-07-15.
+- Порты `3212` и `3213` свободны по повторной проверке 2026-07-16.
 - Домен пока не имеет отдельного FastPanel nginx site и отвечает parking/default page.
+- Node `22.22.2` установлен side-by-side с проверкой официального SHA-256; созданы непривилегированный user `calculandia` и изолированные release/state directories.
+- В репозитории зафиксированы проверяемые nginx/PM2/logrotate templates и fail-closed activate/rollback scripts в `ops/`.
 
 Наличие backup/monitoring внешних систем для Calculandia до deploy не обнаружено; состояние других сайтов не является доказательством готовности Calculandia.
 
@@ -111,14 +113,14 @@ Version читается из read-only `.next/BUILD_ID`; `APP_RELEASE` и др�
 
 Minimum monitoring:
 
-- external HTTPS uptime каждые 1–5 минут;
+- external HTTPS/health/sitemap check из отдельной GitHub infrastructure каждые 30 минут и вручную при deploy;
 - certificate expiry alert;
 - PM2 process status/restarts;
 - nginx 5xx rate;
 - disk/memory alerts;
 - sanitized structured server/client-boundary error logs без пользовательских значений.
 
-Перед launch выполняется test alert через внешний uptime provider. Отсутствие внешнего monitor является release blocker; локальная cron-проверка не считается эквивалентом.
+30-минутный interval удерживает scheduled private-repository job в пределах базовой GitHub Actions quota; переход на 1–5 минут требует отдельного внешнего provider или утверждённого бюджета. PM2 обеспечивает немедленный local restart, а deploy выполняет синхронный external smoke. Перед launch вручную запускается failure simulation и подтверждается красный workflow; затем success run на production. Неактивный remote monitor является release blocker.
 
 ## 8. RTO/RPO/SLO
 
@@ -128,13 +130,13 @@ Minimum monitoring:
 - Mutable user data: отсутствуют.
 - Field performance SLO вводится после RUM; lab budgets находятся в UI spec.
 
-## 9. Git remote blocker
+## 9. Git repository и release provenance
 
-Baseline repository не имеет remote. Локальная commit history и SSH deploy не зависят от remote, но требуемый push невозможен до:
+Создан private repository `github.com/axor91/calculandia`, remote `origin` настроен. До release остаются:
 
-- выбора Git hosting/owner;
-- определения private/public visibility;
-- добавления remote;
-- проверки branch protection/CI secrets.
+- переименование локальной baseline-ветки `master` в `main` до первого push;
+- успешный обязательный CI workflow на clean release commit;
+- проверка доступности branch protection для текущего GitHub plan;
+- сохранение production SHA, идентичного remote commit, `.next/BUILD_ID` и release directory.
 
-Автоматическое создание репозитория допустимо только в явно определённом аккаунте; произвольный выбор владельца не является безопасным deploy-решением.
+Deploy напрямую из dirty tree или commit, отсутствующего в `origin/main`, запрещён.

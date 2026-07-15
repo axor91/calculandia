@@ -65,31 +65,31 @@
 
 ## 3. Page states
 
-| State | Поведение |
-|---|---|
-| Initial | Valid defaults, сразу показан пример результата |
-| Editing | Дешёвый расчёт обновляется после valid parse; тяжёлый ждёт submit |
-| Incomplete | Нейтральная подсказка, старый результат визуально не выдаётся за новый |
-| Invalid | Inline error + summary при нескольких полях; focus на summary после submit |
-| Busy | Только schedule/heavy; кнопка disabled, `aria-busy`, без бесконечного spinner |
-| Result | Основной output в `aria-live=polite`; детальная таблица не озвучивается целиком |
-| Unavailable | Причина и поддерживаемый диапазон, без guessed result |
-| Copy success/failure | Текстовый статус; исходные значения не отправляются серверу |
-| Runtime error | Error boundary, сохранение введённых данных по возможности, retry/reset |
+| State                | Поведение                                                                                                                         |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Initial              | Valid defaults, сразу показан пример результата                                                                                   |
+| Editing              | Дешёвый расчёт обновляется после valid parse; тяжёлый ждёт submit                                                                 |
+| Incomplete           | Нейтральная подсказка, старый результат визуально не выдаётся за новый                                                            |
+| Invalid              | Inline error + summary при нескольких полях; focus на summary после submit                                                        |
+| Busy                 | Только schedule/heavy; кнопка disabled, `aria-busy`, без бесконечного spinner                                                     |
+| Result               | Именованный region; live-статус только после явного действия, чтобы не озвучивать каждую клавишу; таблица не озвучивается целиком |
+| Unavailable          | Причина и поддерживаемый диапазон, без guessed result                                                                             |
+| Copy success/failure | Текстовый статус; исходные значения не отправляются серверу                                                                       |
+| Runtime error        | Error boundary, сохранение введённых данных по возможности, retry/reset                                                           |
 
 ## 4. Responsive/browser matrix
 
-| Environment | Viewport/режим | Gate |
-|---|---|---|
-| Chrome Android | 360×800 portrait, 800×360 landscape, virtual keyboard | Полная функциональность, нет horizontal page scroll |
-| Safari iOS | 390×844 portrait, landscape, safe areas | Inputs не zoom из-за font <16; controls не закрыты keyboard |
-| Tablet Safari/Chrome | 768×1024 и landscape | Нет пустого desktop sidebar; usable split/one-column |
-| Chrome desktop | 1366×768, 1440×900, 1920×1080 | Form и primary result одновременно видимы для short tools |
-| Firefox desktop | 1366×768 | Форматирование/inputs/table эквивалентны |
-| WebKit desktop | 1440×900 | Date/number behaviors и focus проверены |
-| Все desktop | 200% zoom, keyboard-only | Нет потери content/actions и двухмерного scroll |
-| Reduced motion | OS preference | Нет обязательной анимации |
-| Screen reader smoke | NVDA/Firefox и VoiceOver/Safari | Labels, errors, result, menu, FAQ читаются в правильном порядке в обеих связках |
+| Environment          | Viewport/режим                                        | Gate                                                                            |
+| -------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Chrome Android       | 360×800 portrait, 800×360 landscape, virtual keyboard | Полная функциональность, нет horizontal page scroll                             |
+| Safari iOS           | 390×844 portrait, landscape, safe areas               | Inputs не zoom из-за font <16; controls не закрыты keyboard                     |
+| Tablet Safari/Chrome | 768×1024 и landscape                                  | Нет пустого desktop sidebar; usable split/one-column                            |
+| Chrome desktop       | 1366×768, 1440×900, 1920×1080                         | Form и primary result одновременно видимы для short tools                       |
+| Firefox desktop      | 1366×768                                              | Форматирование/inputs/table эквивалентны                                        |
+| WebKit desktop       | 1440×900                                              | Date/number behaviors и focus проверены                                         |
+| Все desktop          | 200% zoom, keyboard-only                              | Нет потери content/actions и двухмерного scroll                                 |
+| Reduced motion       | OS preference                                         | Нет обязательной анимации                                                       |
+| Screen reader smoke  | NVDA/Firefox и VoiceOver/Safari                       | Labels, errors, result, menu, FAQ читаются в правильном порядке в обеих связках |
 
 `44×44` — product target для touch, а не заявление, что каждый inline link обязан иметь такую рамку по WCAG.
 

@@ -1,0 +1,7 @@
+.next/
+.lighthouseci/
+artifacts/
+coverage/
+node_modules/
+playwright-report/
+test-results/
