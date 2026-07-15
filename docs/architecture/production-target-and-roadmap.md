@@ -27,6 +27,8 @@
 
 ## 3. Модульные границы
 
+Логические границы (часть контента физически хранится рядом с типизированным каталогом, UI — в `components/`):
+
 ```text
 catalog/
   definitions, categories, aliases, related graph, validation
@@ -93,7 +95,7 @@ type CalculatorDefinition = {
 };
 ```
 
-Zod/compile-time validation проверяет:
+Build-time TypeScript validation проверяет:
 
 - уникальность slug;
 - опубликованную category;
@@ -124,7 +126,7 @@ Rich content хранится структурой (`paragraph`, `heading`, `lis
 - `DateField` с локализованным выбранным значением;
 - `FieldError`/`ErrorSummary`;
 - `ModeSelector`;
-- `ResultPanel` с `aria-live`;
+- `ResultPanel` без автоматического live-объявления при каждом вводе; отдельный `role=status` используется для результата явного действия и статуса копирования;
 - `CalculatorActions` (reset/share fragment);
 - `FormulaBlock`, `WorkedExample`, `SourceList`, `RelatedTools`.
 
@@ -150,8 +152,9 @@ Short O(1) formulas обновляются live только после valid pa
 - `Organization`;
 - `WebSite`;
 - `BreadcrumbList` с реально существующими ссылками.
+- `WebApplication` для опубликованной страницы калькулятора с видимыми названием, описанием, бесплатной ценой и датой изменения.
 
-Другие типы добавляются только отдельным тестируемым решением. FAQ остаётся видимым content, но `FAQPage` не используется ради rich result.
+`WebApplication` принят ADR-0007. Другие типы добавляются только отдельным тестируемым решением. FAQ остаётся видимым content, но `FAQPage` не используется ради rich result.
 
 Serializer заменяет `<` на `\u003c` перед вставкой JSON в script.
 
@@ -229,7 +232,7 @@ npm ci
 → post-deploy smoke/rollback
 ```
 
-Удалённый Git repository в baseline не настроен. Local commits и deploy по SSH возможны; создание/подключение remote фиксируется отдельно до push.
+После baseline создан private repository `github.com/axor91/calculandia` и настроен `origin`. Первый production push выполняется из clean ветки `main`; deploy разрешён только для commit, прошедшего remote CI и совпадающего с `.next/BUILD_ID`.
 
 ## 12. План и зависимости
 
@@ -302,7 +305,7 @@ Calculator URL готов, если:
 
 - 100% обязательных fields definition schema присутствуют;
 - golden/boundary/property tests зелёные с документированной tolerance;
-- минимум 3 независимых worked examples совпадают с результатом;
+- минимум 2 видимых worked examples совпадают с результатом; независимо от них formula suite содержит минимум 3 hand-calculated golden cases по стандарту качества;
 - formula/source/review/assumption metadata видимы;
 - default state выдаёт корректный результат;
 - axe: 0 critical/serious;

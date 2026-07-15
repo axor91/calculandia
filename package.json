@@ -7,6 +7,10 @@
     "npm": ">=10.9.7 <11"
   },
   "packageManager": "npm@10.9.7",
+  "overrides": {
+    "tmp": "0.2.7",
+    "uuid": "11.1.1"
+  },
   "scripts": {
     "dev": "next dev -p 3212",
     "build": "node scripts/clean-build.mjs && next build && npm run artifact:prepare && npm run artifact:verify",
@@ -20,11 +24,14 @@
     "audit:prod": "npm audit --omit=dev --audit-level=high",
     "artifact:prepare": "node scripts/prepare-standalone.mjs",
     "artifact:verify": "node scripts/verify-standalone.mjs",
+    "release:verify": "node scripts/verify-release-ready.mjs",
     "test:artifact-tools": "node scripts/test-artifact-tools.mjs",
     "smoke:standalone": "node scripts/smoke-standalone.mjs",
+    "test:e2e": "playwright test",
+    "test:lighthouse": "lhci autorun",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run lint && npm run typecheck && npm run test:coverage && npm run test:artifact-tools && npm run audit:prod && npm run build && npm run smoke:standalone"
+    "check": "npm run lint && npm run typecheck && npm run test:coverage && npm run test:artifact-tools && npm run audit:prod && npm run build && npm run smoke:standalone && npm run test:e2e && npm run test:lighthouse"
   },
   "dependencies": {
     "next": "15.5.20",
@@ -33,12 +40,15 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "3.3.5",
+    "@lhci/cli": "0.15.1",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "4.3.2",
     "@types/node": "22.19.15",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitest/coverage-v8": "4.1.10",
     "autoprefixer": "10.5.3",
+    "axe-core": "^4.12.1",
     "eslint": "9.39.2",
     "eslint-config-next": "15.5.20",
     "postcss": "8.5.19",

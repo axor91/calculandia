@@ -1,0 +1,35 @@
+name: production-monitor
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: "Fail after checks to verify the alert channel"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  uptime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: HTTPS and application health
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 15 https://calculandia.ru/ >/dev/null
+          curl --fail --silent --show-error --max-time 15 https://calculandia.ru/sitemap.xml >/dev/null
+          response="$(curl --fail --silent --show-error --max-time 15 https://calculandia.ru/healthz)"
+          node -e 'const value=JSON.parse(process.argv[1]); if(value.status!=="ok" || !/^[0-9a-f]{40}$/.test(value.version)) process.exit(1)' "$response"
+      - name: TLS has more than 14 days remaining
+        run: |
+          set -euo pipefail
+          echo | openssl s_client -servername calculandia.ru -connect calculandia.ru:443 2>/dev/null | openssl x509 -checkend 1209600 -noout
+      - name: Simulated alert
+        if: ${{ inputs.simulate_failure == true }}
+        run: exit 1

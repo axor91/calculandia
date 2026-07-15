@@ -7,7 +7,7 @@
 Архитектура
 Модель: модульный монолит с чёткими доменными границами, готовый к выделению микро-сервисов при росте нагрузки.
 Домены и границы:
-Калькуляторы: UI-компоненты и чистые функции расчёта в logic/*.
+Калькуляторы: UI-компоненты и чистые функции расчёта в logic/_.
 Каталог/Категории: справочники, связка калькулятор → категория.
 SEO и Контент: title/description/keywords, afterCalculator HTML, FAQ, реклама.
 Админка: UI для правок, API для сохранения в БД.
@@ -37,7 +37,7 @@ ORM: Prisma (миграции, типы).
 Линтинг/форматирование: ESLint, Prettier, Husky + lint-staged.
 Логи/наблюдаемость: Pino/Next logs, Sentry (ошибки), Web Vitals/Lighthouse.
 Структура проекта
-app/: страницы, layout, API routes (app/api/*), SEO-файлы (sitemap.ts, robots.ts).
+app/: страницы, layout, API routes (app/api/_), SEO-файлы (sitemap.ts, robots.ts).
 components/: UI-калькуляторы и общие компоненты (NumericInput, AdBanner, ContentBlock, FAQ, SeoTools).
 logic/: чистые функции расчётов (без React).
 lib/: типы, адаптеры БД, сервисы, конфигурации (Prisma client, мапперы DTO).
@@ -98,56 +98,57 @@ UI-компонент components/{CalcName}Calculator.tsx — используе
 Поддерживаемый способ: явный componentMap: Record<string, React.ComponentType> в app/calculator/[id]/page.tsx.
 Альтернатива (по мере роста): lib/components-map.ts с Record<string, () => Promise<{ default: React.ComponentType }>> и dynamic() для код-сплиттинга.
 Гайд по добавлению нового калькулятора:
-1) Добавить logic/new-calc.ts с экспортом чистой функции.
-2) Создать components/NewCalcCalculator.tsx (использовать NumericInput, форматирование Intl.NumberFormat('ru-RU')).
-3) Добавить запись в БД (сид/админка): id, name, category, component: 'NewCalcCalculator', SEO/контент.
-4) Добавить компонент в componentMap.
-5) Написать unit-тесты на логику и компонент.
-Тестирование
-Unit:
-Функции из logic/* (границы, NaN, негативные кейсы).
-Маппинг DTO БД → UI-модель.
-Component:
-Рендер и интеракции калькуляторов (Testing Library).
-Снапшоты ключевых состояний.
-Integration:
-API маршруты с тестовой БД (Prisma + sqlite in-memory).
-Валидация Zod, статусы ошибок.
-E2E:
-Ключевые пользовательские сценарии (выбор калькулятора, ввод данных, просмотр результата).
-Админка: логин, правки SEO/контента, проверка отражения на странице.
-Нефункциональные:
-Lighthouse/Web Vitals, perf budget.
-Безопасность: XSS/HTML инъекции, заголовки ответов.
-Качество и безопасность (продакшен)
-Код:
-ESLint + Prettier, strict TS, запрет any, guard clauses, DRY.
-PR правила: code review 2+ апрува, CI green build, покрытие unit ≥ 80% для logic/*.
-Безопасность:
-CSP, X-Content-Type-Options, Referrer-Policy, Permissions-Policy.
-Очистка HTML контента (DOMPurify), экранирование.
-Авторизация и защита админ-API; JWT/Session, ротация токенов.
-Секреты — в переменных окружения (не коммитить).
-Данные:
-Миграции Prisma, бэкапы БД, миграции backward-compatible.
-Сани-инпутов/валидация на всех API.
-Наблюдаемость:
-Логи ошибок (Sentry), технические метрики (статусы кодов, latency).
-Алерты SLAs (например, TTFB p95 < 500ms).
-Производительность:
-Кэш заголовки, статические ассеты через CDN.
-Код-сплиттинг калькуляторов.
-CI/CD и окружения
-Environments: dev, staging, prod.
-CI:
-Установка, линт, тесты (unit/integration), build.
-CD:
-Автодеплой в staging по main, ручной промоушен в prod.
-Docker:
-Контейнер для Next.js и Prisma миграции при старте.
-Переменные окружения:
-DATABASE_URL, NEXT_PUBLIC_SITE_URL, SENTRY_DSN, секреты аутентификации.
-Команды (Windows PowerShell)
+
+1. Добавить logic/new-calc.ts с экспортом чистой функции.
+2. Создать components/NewCalcCalculator.tsx (использовать NumericInput, форматирование Intl.NumberFormat('ru-RU')).
+3. Добавить запись в БД (сид/админка): id, name, category, component: 'NewCalcCalculator', SEO/контент.
+4. Добавить компонент в componentMap.
+5. Написать unit-тесты на логику и компонент.
+   Тестирование
+   Unit:
+   Функции из logic/* (границы, NaN, негативные кейсы).
+   Маппинг DTO БД → UI-модель.
+   Component:
+   Рендер и интеракции калькуляторов (Testing Library).
+   Снапшоты ключевых состояний.
+   Integration:
+   API маршруты с тестовой БД (Prisma + sqlite in-memory).
+   Валидация Zod, статусы ошибок.
+   E2E:
+   Ключевые пользовательские сценарии (выбор калькулятора, ввод данных, просмотр результата).
+   Админка: логин, правки SEO/контента, проверка отражения на странице.
+   Нефункциональные:
+   Lighthouse/Web Vitals, perf budget.
+   Безопасность: XSS/HTML инъекции, заголовки ответов.
+   Качество и безопасность (продакшен)
+   Код:
+   ESLint + Prettier, strict TS, запрет any, guard clauses, DRY.
+   PR правила: code review 2+ апрува, CI green build, покрытие unit ≥ 80% для logic/*.
+   Безопасность:
+   CSP, X-Content-Type-Options, Referrer-Policy, Permissions-Policy.
+   Очистка HTML контента (DOMPurify), экранирование.
+   Авторизация и защита админ-API; JWT/Session, ротация токенов.
+   Секреты — в переменных окружения (не коммитить).
+   Данные:
+   Миграции Prisma, бэкапы БД, миграции backward-compatible.
+   Сани-инпутов/валидация на всех API.
+   Наблюдаемость:
+   Логи ошибок (Sentry), технические метрики (статусы кодов, latency).
+   Алерты SLAs (например, TTFB p95 < 500ms).
+   Производительность:
+   Кэш заголовки, статические ассеты через CDN.
+   Код-сплиттинг калькуляторов.
+   CI/CD и окружения
+   Environments: dev, staging, prod.
+   CI:
+   Установка, линт, тесты (unit/integration), build.
+   CD:
+   Автодеплой в staging по main, ручной промоушен в prod.
+   Docker:
+   Контейнер для Next.js и Prisma миграции при старте.
+   Переменные окружения:
+   DATABASE_URL, NEXT_PUBLIC_SITE_URL, SENTRY_DSN, секреты аутентификации.
+   Команды (Windows PowerShell)
 
 Dev:
 
@@ -160,7 +161,6 @@ npm run dev
 Prod (пример):
 npm run build
 npm run start
-
 
 Критерии готовности (Definition of Done)
 Добавление нового калькулятора не требует изменения более чем в 3 местах (логика, компонент, маппинг/запись в БД).

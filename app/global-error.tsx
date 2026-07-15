@@ -21,19 +21,19 @@ export default function GlobalError({
   return (
     <html lang="ru">
       <body>
-        <main className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
-          <div className="w-full max-w-md border border-neutral-300 bg-white p-8 text-center">
-            <h1 className="text-xl font-bold text-neutral-950">
+        <main className="flex min-h-screen items-center justify-center bg-canvas px-4">
+          <div className="w-full max-w-md rounded-[24px] border border-line bg-white p-8 text-center">
+            <h1 className="text-2xl font-black text-ink">
               Сайт временно недоступен
             </h1>
-            <p className="mt-3 text-sm leading-6 text-neutral-600">
+            <p className="mt-3 text-sm leading-6 text-muted">
               Мы уже зафиксировали техническую ошибку. Попробуйте загрузить
               страницу ещё раз.
             </p>
             <button
               type="button"
               onClick={reset}
-              className="mt-6 border-2 border-neutral-950 px-5 py-3 font-semibold text-neutral-950 hover:bg-neutral-950 hover:text-white"
+              className="mt-6 min-h-11 rounded-xl bg-teal px-5 py-3 font-bold text-white hover:bg-teal-dark"
             >
               Повторить
             </button>

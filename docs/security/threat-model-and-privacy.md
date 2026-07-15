@@ -1,6 +1,6 @@
 # Threat model и privacy design
 
-- Статус: **Approved for launch scope**
+- Статус: **Technical controls approved; legal/operator approval pending**
 
 ## 1. Data inventory
 
@@ -64,6 +64,10 @@ External data API, CMS and runtime DB отсутствуют в launch boundary.
 Документ фиксирует технический data design, но не является юридическим заключением. Перед подключением analytics, ads, contact forms или user accounts требуется отдельная правовая проверка применимых требований, обновление политики и назначение data owner.
 
 На launch необязательных trackers нет, поэтому блокирующий consent banner не нужен.
+
+До Production Gate требуется указать проверяемые данные владельца/оператора, статус и адрес, действующий privacy contact, основания/цели/сроки обработки технических метаданных и порядок реализации прав пользователя. Эти данные нельзя выводить из Git nickname или придумывать. Пока владелец не предоставил их и текст не прошёл legal review, публичный launch блокируется независимо от технической готовности.
+
+Игнорируемый legacy `.env` не входит в artifact и локально ограничен mode `0600`. Содержащиеся в нём старые credentials считаются кандидатами на ротацию; их значения не копируются в документацию или release.
 
 ## 6. Security verification
 

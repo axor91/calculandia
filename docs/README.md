@@ -1,6 +1,6 @@
 # Документация Calculandia
 
-Актуально на **15 июля 2026 года**.
+Актуально на **16 июля 2026 года**.
 
 ## Статус
 
@@ -9,8 +9,9 @@ Baseline исходного проекта зафиксирован коммит
 - Node во время аудита: `v22.22.2`.
 - npm: `10.9.7`.
 - SHA-256 исходного `package-lock.json`: `5e5dfa1f630b8540bdde43af8e2b6975a174d23594b317597d7b1e1692a6b778`.
-- Документационный gate: исправляется по результатам трёх независимых ревью.
-- Production gate: закрыт; публичный запуск запрещён до выполнения release DoD.
+- Documentation, P0 platform и calculator correctness gates: **Approved** после повторных независимых ревью.
+- Release Candidate gate: в работе; clean commit/remote CI ещё не зафиксированы.
+- Production gate: **не утверждён**; публичный запуск запрещён до operator/privacy approval, TLS/deploy/monitor/rollback evidence.
 
 ## Нормативные документы
 
@@ -26,6 +27,8 @@ Baseline исходного проекта зафиксирован коммит
 10. [`implementation/status.md`](implementation/status.md) — текущие gates и внешние блокеры.
 11. [`reviews/2026-07-15-documentation-gate.md`](reviews/2026-07-15-documentation-gate.md) — замечания независимого ревью и принятые решения.
 12. [`security/dependency-exceptions.md`](security/dependency-exceptions.md) — ограниченные по сроку dependency exceptions и reachability.
+13. [`reviews/2026-07-16-implementation-gates.md`](reviews/2026-07-16-implementation-gates.md) — findings и повторные ревью foundation, 14 калькуляторов, UX и release engineering.
+14. [`research/2026-07-16-visual-implementation-review.md`](research/2026-07-16-visual-implementation-review.md) — viewport/browser evidence реализованного интерфейса.
 
 ## Принятые решения
 
@@ -35,6 +38,7 @@ Baseline исходного проекта зафиксирован коммит
 - [`decisions/0004-admin-and-content-security.md`](decisions/0004-admin-and-content-security.md) — админка отключена, произвольный HTML запрещён.
 - [`decisions/0005-telemetry-and-user-data.md`](decisions/0005-telemetry-and-user-data.md) — privacy-first телеметрия без значений расчётов.
 - [`decisions/0006-production-deployment.md`](decisions/0006-production-deployment.md) — один выбранный production design.
+- [`decisions/0007-calculator-structured-data.md`](decisions/0007-calculator-structured-data.md) — тестируемый `WebApplication` для canonical calculator pages.
 
 ## Термины статуса
 

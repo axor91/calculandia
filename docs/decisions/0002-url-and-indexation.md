@@ -20,15 +20,14 @@
 
 ## Redirect baseline → release
 
-| Старый URL | Новый URL | Код |
-|---|---|---:|
+| Старый URL                 | Новый URL                           | Код |
+| -------------------------- | ----------------------------------- | --: |
 | `/calculator/percent-diff` | `/kalkulyator/procentnoe-izmenenie` | 301 |
-| `/calculator/mortgage` | `/kalkulyator/ipoteka` | 301 |
-| `/calculator/fractions` | `/kalkulyator/drobi` | 301 |
-| `/calculator/days` | `/kalkulyator/dni-mezhdu-datami` | 301 |
-| `/calculator/equations` | нет production-эквивалента | 404 |
+| `/calculator/mortgage`     | `/kalkulyator/ipoteka`              | 301 |
+| `/calculator/fractions`    | `/kalkulyator/drobi`                | 301 |
+| `/calculator/days`         | `/kalkulyator/dni-mezhdu-datami`    | 301 |
+| `/calculator/equations`    | нет production-эквивалента          | 404 |
 
 ## Последствия
 
 Категорию можно менять без смены URL инструмента. Состояние расчёта не индексируется и не передаётся серверу. Любое изменение slug требует новой ADR-записи и redirect test.
-

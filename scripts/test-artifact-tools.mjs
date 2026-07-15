@@ -7,6 +7,20 @@ import {
   verifyArtifactManifest,
   writeArtifactManifest,
 } from "./artifact-integrity.mjs";
+import { assertCleanReleaseId } from "./release-id.mjs";
+
+const cleanSha = "a".repeat(40);
+assertCleanReleaseId(cleanSha, cleanSha);
+for (const invalid of [`${cleanSha}-dirty`, "dirty", "b".repeat(40)]) {
+  let rejected = false;
+  try {
+    assertCleanReleaseId(invalid, cleanSha);
+  } catch {
+    rejected = true;
+  }
+  if (!rejected)
+    throw new Error(`Unsafe production release ID accepted: ${invalid}`);
+}
 
 const directory = await mkdtemp(
   path.join(os.tmpdir(), "calculandia-artifact-test-"),
