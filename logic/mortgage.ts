@@ -33,21 +33,33 @@ export function calculateAnnuityDetails(
   annualRatePercent: number,
   years: number,
 ): MortgageDetailedResult | null {
-  if (!isValidPositiveNumber(loanAmount) || !isValidPositiveNumber(annualRatePercent) || !isValidPositiveNumber(years)) {
+  if (
+    !isValidPositiveNumber(loanAmount) ||
+    !isValidPositiveNumber(annualRatePercent) ||
+    !isValidPositiveNumber(years)
+  ) {
     return null;
   }
   const monthlyRate = annualRatePercent / 100 / 12;
   const months = Math.round(years * 12);
   if (months <= 0) return null;
 
-  const monthlyPayment = (loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, months))) / (Math.pow(1 + monthlyRate, months) - 1);
+  const monthlyPayment =
+    (loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, months))) /
+    (Math.pow(1 + monthlyRate, months) - 1);
   let balance = loanAmount;
   const schedule: PaymentScheduleItem[] = [];
   for (let m = 1; m <= months; m++) {
     const interest = balance * monthlyRate;
     const principal = monthlyPayment - interest;
     balance = Math.max(0, balance - principal);
-    schedule.push({ month: m, payment: monthlyPayment, principal, interest, balance });
+    schedule.push({
+      month: m,
+      payment: monthlyPayment,
+      principal,
+      interest,
+      balance,
+    });
   }
   const totalPayment = monthlyPayment * months;
   const overpayment = totalPayment - loanAmount;
@@ -68,7 +80,11 @@ export function calculateDifferentiatedDetails(
   annualRatePercent: number,
   years: number,
 ): MortgageDetailedResult | null {
-  if (!isValidPositiveNumber(loanAmount) || !isValidPositiveNumber(annualRatePercent) || !isValidPositiveNumber(years)) {
+  if (
+    !isValidPositiveNumber(loanAmount) ||
+    !isValidPositiveNumber(annualRatePercent) ||
+    !isValidPositiveNumber(years)
+  ) {
     return null;
   }
   const monthlyRate = annualRatePercent / 100 / 12;
@@ -108,7 +124,12 @@ export function calculateMortgage(
   ratePercent: number,
   years: number,
 ): MortgageResult | null {
-  if (!isValidPositiveNumber(price) || !isValidNonNegativeNumber(initialPayment) || !isValidPositiveNumber(ratePercent) || !isValidPositiveNumber(years)) {
+  if (
+    !isValidPositiveNumber(price) ||
+    !isValidNonNegativeNumber(initialPayment) ||
+    !isValidPositiveNumber(ratePercent) ||
+    !isValidPositiveNumber(years)
+  ) {
     return null;
   }
   const loanAmount = price - initialPayment;
@@ -118,5 +139,3 @@ export function calculateMortgage(
   const { monthlyPayment, totalPayment, overpayment } = details;
   return { monthlyPayment, totalPayment, overpayment, loanAmount };
 }
-
-

@@ -1,44 +1,37 @@
-import type { Metadata } from 'next';
-import './globals.css';
+import type { Metadata } from "next";
+import "./globals.css";
+import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: 'Калькуляторы онлайн — Calculandia.ru',
-  description: 'Простые и удобные онлайн калькуляторы для математических и финансовых расчётов. Бесплатные инструменты для повседневных вычислений.',
-  keywords: ['калькулятор', 'онлайн', 'математика', 'финансы', 'расчёты', 'calculandia'],
-  authors: [{ name: 'Calculandia' }],
+  metadataBase: new URL(siteConfig.origin),
+  title: {
+    default: "Онлайн-калькуляторы — Calculandia",
+    template: "%s — Calculandia",
+  },
+  description: siteConfig.description,
+  authors: [{ name: "Calculandia" }],
+  alternates: { canonical: "/" },
   openGraph: {
-    title: 'Калькуляторы онлайн — Calculandia.ru',
-    description: 'Простые и удобные онлайн калькуляторы для математических и финансовых расчётов.',
-    type: 'website',
-    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://calculandia.ru',
-    siteName: 'Calculandia',
+    title: "Онлайн-калькуляторы — Calculandia",
+    description: siteConfig.description,
+    type: "website",
+    url: siteConfig.origin,
+    siteName: siteConfig.name,
+    locale: "ru_RU",
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Калькуляторы онлайн — Calculandia.ru',
-    description: 'Простые и удобные калькуляторы для математических и финансовых расчётов.',
+    card: "summary_large_image",
+    title: "Онлайн-калькуляторы — Calculandia",
+    description: siteConfig.description,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://calculandia.ru'),
 };
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ru">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="font-sans antialiased">
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

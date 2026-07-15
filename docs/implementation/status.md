@@ -2,15 +2,15 @@
 
 Обновлено: 2026-07-15.
 
-| Gate | Статус | Evidence |
-|---|---|---|
-| Baseline | Complete | `170153337ef3507907e1d91c504b45374e0c03ef` |
-| Documentation Gate A | **Approved** | Product/SEO/UX review APPROVED; documentation review APPROVED после трёх проходов |
-| P0 Platform Gate B | In progress | Разрешён после approval Gate A |
-| Foundation Gate C | Not started | — |
-| Calculator Catalog Gate D | Not started | — |
-| Release Candidate Gate E | Not started | — |
-| Production Gate F | Not started | — |
+| Gate                      | Статус          | Evidence                                                                                                                                                  |
+| ------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Baseline                  | Complete        | `170153337ef3507907e1d91c504b45374e0c03ef`                                                                                                                |
+| Documentation Gate A      | **Approved**    | Product/SEO/UX review APPROVED; documentation review APPROVED после трёх проходов                                                                         |
+| P0 Platform Gate B        | **Approved**    | technical/quality/security APPROVED after four review passes; 72 tests; Git-bound manifest/read-only artifact; sanitized telemetry; 0 high/critical audit |
+| Foundation Gate C         | **In progress** | Registry/routes/design-system/SEO foundation implementation                                                                                               |
+| Calculator Catalog Gate D | Not started     | —                                                                                                                                                         |
+| Release Candidate Gate E  | Not started     | —                                                                                                                                                         |
+| Production Gate F         | Not started     | —                                                                                                                                                         |
 
 ## External state
 
@@ -21,8 +21,7 @@
 
 ## Текущая разрешённая работа
 
-1. Нормализовать toolchain/repository hygiene.
-2. Обновить зависимости и закрыть vulnerability gate.
-3. Удалить DB/admin/arbitrary HTML из public runtime.
-4. Получить green lint/type/test/build.
-5. Отправить P0 batch на независимое review.
+1. Зафиксировать approved P0 отдельным commit.
+2. Реализовать typed launch registry, canonical routes, redirects и catalog validation.
+3. Реализовать responsive/a11y design-system shell, search и SEO platform.
+4. Получить независимый Foundation Gate C review до интеграции полного calculator catalog.

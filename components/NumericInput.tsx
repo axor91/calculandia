@@ -1,4 +1,4 @@
-import React, { type ChangeEvent, type HTMLAttributes } from 'react';
+import React, { type ChangeEvent, type HTMLAttributes } from "react";
 
 type NumericInputProps = {
   value: string;
@@ -6,7 +6,7 @@ type NumericInputProps = {
   placeholder?: string;
   className?: string;
   allowNegative?: boolean;
-  inputMode?: HTMLAttributes<HTMLInputElement>['inputMode'];
+  inputMode?: HTMLAttributes<HTMLInputElement>["inputMode"];
 };
 
 export default function NumericInput({
@@ -15,17 +15,17 @@ export default function NumericInput({
   placeholder,
   className,
   allowNegative = false,
-  inputMode = 'decimal',
+  inputMode = "decimal",
 }: NumericInputProps) {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const next = e.target.value;
 
-    if (next === '') {
+    if (next === "") {
       onChange(next);
       return;
     }
 
-    if (allowNegative && next === '-') {
+    if (allowNegative && next === "-") {
       onChange(next);
       return;
     }
@@ -47,5 +47,3 @@ export default function NumericInput({
     />
   );
 }
-
-
