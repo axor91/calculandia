@@ -1,125 +1,51 @@
-# Целевая архитектура и дорожная карта Calculandia
+# Целевая архитектура и план реализации
 
-Статус: **предложение по итогам аудита**  
-Дата: **15 июля 2026 года**
+- Статус: **Approved for implementation**
+- Основание: baseline `170153337ef3507907e1d91c504b45374e0c03ef`
+- Дата: 2026-07-15
 
-## 1. Цель первого релиза
+## 1. Цель
 
-Опубликовать не максимальный каталог, а устойчивую платформу, которую можно сразу отдавать на индексацию и затем расширять без изменения базовой архитектуры.
+Запустить по `https://calculandia.ru` production-сайт с 14 проверенными калькуляторами, четырьмя category hubs, task-first responsive UI, корректной индексацией, воспроизводимым deploy и измеримым release gate.
 
-Первый релиз должен включать:
+Масштаб каталога не является критерием успеха. Критерии — правильность результата, завершение задачи, понятные допущения, доступность и эксплуатационная устойчивость.
 
-- 12–15 полноценных калькуляторов;
-- четыре содержательные категории;
-- task-first UI и адаптивность;
-- корректные canonical, sitemap, robots и breadcrumbs;
-- formula/source/update metadata;
-- безопасный публичный runtime без зависимости от доступности CMS;
-- мониторинг, backup и воспроизводимый deploy.
+## 2. Принятые ограничения первого релиза
 
-## 2. Архитектурные решения
+- Модульный монолит Next.js; микросервисы, Redis и очереди не используются.
+- Публичный runtime не зависит от PostgreSQL/Prisma.
+- Каталог и контент типизированы и хранятся в Git.
+- Admin/login/write API отсутствуют в production bundle.
+- Произвольный HTML, script-реклама и arbitrary JSON-LD отсутствуют.
+- Product analytics, Replay и реклама выключены.
+- Рабочие дни РФ и solver уравнений не публикуются.
+- Формулы выполняются в браузере; пользовательские значения не отправляются серверу.
+- Deploy target — проверенный сервер `203.0.113.20`, nginx/FastPanel + PM2 + Next standalone на side-by-side Node 22.22.2.
 
-### 2.1 Модель приложения
+Нормативные ADR перечислены в [`../README.md`](../README.md).
 
-Оставить модульный монолит Next.js. Микросервисы, очередь задач и Redis на первом этапе не нужны: они не решают текущие блокеры и увеличивают операционную стоимость.
-
-Границы:
-
-- `catalog` — определения категорий и калькуляторов;
-- `calculations` — чистые формулы и схемы ввода/вывода;
-- `content` — SEO-текст, примеры, FAQ, источники и дата проверки;
-- `ui` — общий calculator shell и специализированные widgets;
-- `platform` — metadata, sitemap, headers, monitoring и deploy;
-- `admin` — отдельная необязательная граница, отключённая в первом production-релизе.
-
-### 2.2 Источник истины
-
-Предложение: **code-first публичный каталог + version-controlled content**.
-
-Причины:
-
-- реализация формулы и React-компонент уже находятся в коде;
-- произвольное имя компонента из БД не даёт настоящего единого источника истины;
-- публичные страницы не должны исчезать при отказе БД;
-- изменения формул требуют review, тестов и версии;
-- Git даёт историю и rollback без разработки полноценной CMS.
-
-PostgreSQL используется там, где данные действительно изменяются независимо от deploy:
-
-- будущая CMS и редакционный workflow;
-- пользователи/роли;
-- audit log;
-- holiday cache;
-- операционные настройки, если они не влияют на целостность каталога.
-
-Статус решения: proposed. Перед реализацией требуется зафиксировать его как ADR, но оно рекомендовано для быстрого запуска.
-
-### 2.3 Типизированное определение
-
-Концептуальный контракт:
-
-```ts
-type CalculatorDefinition = {
-  slug: string;
-  category: CategoryId;
-  component: CalculatorComponentId;
-  formulaVersion: string;
-  title: string;
-  description: string;
-  seo: {
-    title: string;
-    description: string;
-  };
-  updatedAt: string;
-  sources: Source[];
-  related: string[];
-  status: "draft" | "published";
-};
-```
-
-`component` выбирается из union/typed map, а не принимается как произвольная строка из БД.
-
-## 3. Предлагаемая структура
+## 3. Модульные границы
 
 ```text
-app/
-  kalkulyatory/
-    page.tsx
-    [category]/page.tsx
-  kalkulyator/
-    [slug]/page.tsx
-  o-proekte/page.tsx
-  metodologiya/page.tsx
-  istochniki/page.tsx
-  kontakty/page.tsx
-  politika-konfidencialnosti/page.tsx
+catalog/
+  definitions, categories, aliases, related graph, validation
 
-src/ или существующие корневые каталоги:
-  catalog/
-    categories.ts
-    calculators.ts
-    types.ts
-  content/
-    calculators/{slug}.mdx
-    categories/{slug}.mdx
-  logic/
-    {slug}.ts
-  components/
-    calculators/
-    calculator-shell/
-    catalog/
-  lib/
-    seo/
-    structured-data/
-    formatting/
-    monitoring/
+calculations/
+  pure formula modules, input/output types, golden tests
+
+content/
+  structured page sections, examples, sources, assumptions
+
+ui/
+  site shell, catalog/search, calculator shell, field/result primitives
+
+platform/
+  metadata, structured data, sitemap, redirects, headers, health, logging
 ```
 
-Переезд каталогов под `src/` не является обязательным для запуска. Важнее границы модулей и типизированные контракты.
+Расчётный модуль не импортирует React/Next и не читает env/network/time без явного аргумента. UI не дублирует формулу. Registry не содержит произвольных component strings.
 
-## 4. Информационная архитектура
-
-### 4.1 Маршруты
+## 4. Целевая структура маршрутов
 
 ```text
 /
@@ -134,353 +60,268 @@ src/ или существующие корневые каталоги:
 /istochniki
 /kontakty
 /politika-konfidencialnosti
+/healthz
 ```
 
-Калькулятор имеет flat URL вне category path. Это позволяет менять категорию без изменения адреса и накопленного поискового сигнала.
+Точные 14 URL и redirects: [`../product/launch-manifest.md`](../product/launch-manifest.md). URL contract: ADR-0002.
 
-Существующие `/calculator/{id}` получают 301 redirect на новые канонические URL. Карта redirect фиксируется до первой индексации и покрывается тестами.
+## 5. Данные каталога
 
-### 4.2 Навигация
+```ts
+type CalculatorDefinition = {
+  slug: CalculatorSlug;
+  category: CategoryId;
+  component: CalculatorComponentId;
+  status: "published" | "draft";
+  title: string;
+  shortDescription: string;
+  aliases: readonly string[];
+  seo: { title: string; description: string };
+  formulaVersion: string;
+  contentUpdatedAt: ISODate;
+  formulaReviewedAt: ISODate;
+  sourceCheckedAt: ISODate;
+  dataEffectiveAt?: ISODate;
+  assumptions: readonly string[];
+  roundingPolicy: string;
+  sources: readonly Source[];
+  examples: readonly WorkedExample[];
+  sections: readonly ContentSection[];
+  faq: readonly FaqItem[];
+  related: readonly CalculatorSlug[];
+};
+```
 
-Desktop header:
+Zod/compile-time validation проверяет:
 
-- логотип;
-- поиск;
-- категории;
-- все калькуляторы;
-- о проекте.
+- уникальность slug;
+- опубликованную category;
+- существование component;
+- related graph без broken target/self-loop/duplicate;
+- обязательные даты/источники/examples;
+- длины title/description;
+- соответствие sitemap только published entries.
 
-Mobile header:
+Rich content хранится структурой (`paragraph`, `heading`, `list`, `formula`, `example`, `table`, `note`) и рендерится безопасными компонентами. MDX/HTML/CMS не нужны в launch.
 
-- логотип;
-- отдельная понятная кнопка поиска;
-- одна кнопка menu;
-- drawer с категориями и trust/legal links.
+## 6. Rendering и caching
 
-## 5. Каталог первого релиза
+- Главная, каталог, категории, trust pages и calculator pages статически генерируются при build.
+- `generateStaticParams` берёт только published registry entries.
+- Нет ISR, зависящего от БД.
+- HTML/assets кэшируются nginx с immutable policy для hashed static assets и короткой revalidation для HTML.
+- `/healthz` динамически подтверждает процесс/version без external dependencies.
+- 404 не кэшируется как замена инфраструктурной ошибке.
 
-Целевой объём: 12–15 страниц. Финальная граница определяется качеством, а не календарным числом.
+## 7. UI-архитектура
 
-### 5.1 Математика
+### Calculator shell
 
-1. Универсальный калькулятор процентов, включая процент от числа, число по проценту, изменение и разницу.
-2. Калькулятор дробей.
-3. Пропорции.
-4. Уравнения/системы уравнений с понятным scope.
-5. Среднее значение — если успевает пройти тот же content/QA gate.
+Общие компоненты:
 
-Текущий `percent-diff` объединяется с более сильным универсальным intent либо сохраняется как режим с 301 redirect старого URL.
+- `LocalizedNumberField`;
+- `DateField` с локализованным выбранным значением;
+- `FieldError`/`ErrorSummary`;
+- `ModeSelector`;
+- `ResultPanel` с `aria-live`;
+- `CalculatorActions` (reset/share fragment);
+- `FormulaBlock`, `WorkedExample`, `SourceList`, `RelatedTools`.
 
-### 5.2 Финансы
+Short O(1) formulas обновляются live только после valid parse. Schedules и потенциально тяжёлые расчёты запускаются по submit. Mobile и desktop имеют одинаковую функциональность; таблица графика не урезается на mobile, а адаптируется/раскрывается.
 
-1. Ипотека.
-2. Кредит.
-3. Вклад и сложный процент.
-4. Досрочное погашение.
+Полная UI/state/search спецификация: [`../product/search-page-and-ui-spec.md`](../product/search-page-and-ui-spec.md).
 
-Обязательны источники, дата проверки, описание допущений и дисклеймер о справочном характере результата.
+## 8. SEO
 
-### 5.3 Дата и время
+### Metadata/indexation
 
-1. Разница между датами.
-2. Прибавить/вычесть период из даты.
-3. Возраст.
-4. Рабочие дни РФ.
+- unique title/description/canonical для каждого published URL;
+- root metadataBase = canonical origin;
+- categories имеют самостоятельное описание и список задач;
+- staging/preview не индексируются на уровне response header/meta и закрыты auth/network policy;
+- login/admin отсутствуют;
+- query duplicate нормализуется canonical, share-state только fragment.
 
-Если два intent реализуются на одной странице, URL и content должны соответствовать главному запросу, а интерфейс — не превращаться в длинный набор несвязанных режимов.
+### Structured data
 
-### 5.4 Строительство
+Разрешены генерируемые кодом:
 
-1. Бетон.
-2. Плитка.
-3. Обои либо напольное покрытие.
+- `Organization`;
+- `WebSite`;
+- `BreadcrumbList` с реально существующими ссылками.
 
-Эта категория имеет практический спрос и более низкий риск быстро устаревающих нормативов, чем налоги и пособия.
+Другие типы добавляются только отдельным тестируемым решением. FAQ остаётся видимым content, но `FAQPage` не используется ради rich result.
 
-### 5.5 Что откладывается
+Serializer заменяет `<` на `\u003c` перед вставкой JSON в script.
 
-- НДФЛ, НДС, УСН, зарплата, пособия — до официального data-update pipeline.
-- Здоровье — до формализованных источников, review и дисклеймеров.
-- Авто и спорт — до подтверждения спроса и качества первых четырёх clusters.
-- Тысячи автоматически сгенерированных converters — не входят в стратегию запуска.
+### Sitemap/robots
 
-## 6. Шаблоны страниц
+- sitemap содержит только canonical published routes;
+- `lastModified` берётся из существенной content/formula даты;
+- draft/health/admin/API не включаются;
+- robots указывает canonical sitemap;
+- URL-проверки выполняются после production deploy.
 
-### 6.1 Главная
+## 9. Security и privacy
 
-1. H1/позиционирование без SEO-полотна.
-2. Поиск с подсказками.
-3. Популярные задачи.
-4. Четыре категории.
-5. Новые и обновлённые калькуляторы.
-6. Коротко о проверке формул.
-7. Footer с trust/legal.
+Threat model: [`../security/threat-model-and-privacy.md`](../security/threat-model-and-privacy.md).
 
-### 6.2 Категория
+Обязательные controls:
 
-1. Breadcrumbs.
-2. H1 и уникальное введение.
-3. Популярные инструменты.
-4. Task-based subgroups.
-5. Все опубликованные калькуляторы категории.
-6. Связанный guide только при самостоятельной ценности.
+- dependencies pinned lockfile, audit/exception policy;
+- env validation; launch требует только canonical origin и optional error DSN/release;
+- одна CSP, совместимая со статическим рендером;
+- `frame-ancestors 'none'`, `object-src 'none'`, strict referrer/permissions policy;
+- никакого user HTML/eval/ad scripts;
+- body limits и reverse-proxy timeouts;
+- no Replay/analytics/input logging;
+- dependency exception имеет owner, reachability, compensating control и expiry.
 
-Категория не публикуется, пока в ней нет минимум трёх полноценных инструментов.
+## 10. Тестовая стратегия
 
-### 6.3 Калькулятор
+### Formula
 
-1. Breadcrumbs.
-2. H1 и одно предложение о результате.
-3. Calculator shell: inputs + live result.
-4. Presets, reset, copy/share URL.
-5. Формула и алгоритм.
-6. Worked examples.
-7. Интерпретация и ограничения.
-8. Источники, formula version и дата проверки.
-9. Related calculators.
-10. Visible FAQ без FAQPage schema.
-11. Реклама после результата/полезного блока.
+- golden/boundary/property tests по стандарту качества;
+- отдельные reference fixtures, не вычисленные тестируемой функцией;
+- timezone matrix для date functions;
+- reconciliation для financial schedules.
 
-### 6.4 Trust-страницы
+### Component/accessibility
 
-- «О проекте» — назначение, владелец, контакты.
-- «Методология» — как выбираются формулы, тестируются границы и обновляются данные.
-- «Источники» — политика первичных источников.
-- Политика конфиденциальности — фактически используемые данные и trackers.
-- Контакты — способ сообщить об ошибке в формуле.
+- default/invalid/result/reset/share states;
+- label/description/error linkage;
+- keyboard mode controls;
+- axe 0 critical/serious;
+- screen-reader smoke вручную на staging.
 
-## 7. SEO-архитектура
+### E2E
 
-### 7.1 Metadata
+- главная → поиск → calculator → result → related;
+- каждый category link и breadcrumb;
+- redirects baseline → canonical;
+- 404;
+- sitemap/robots/canonical/schema;
+- responsive smoke representative calculator каждого structural type.
 
-- уникальные title/description;
-- canonical только на production host;
-- Open Graph/Twitter cards;
-- никаких автоматически составленных keywords как основного SEO-механизма;
-- `noindex` для draft, поиска с параметрами, preview и admin.
+### Platform
 
-### 7.2 Structured data
+- install/lint/typecheck/unit/component/build;
+- dependency audit policy;
+- link checker 0 broken links;
+- healthcheck/deploy/rollback smoke;
+- Lighthouse budgets.
 
-Генерируется только кодом из типизированных данных:
-
-- Organization;
-- WebSite;
-- BreadcrumbList.
-
-Дополнительный тип добавляется только если страница полностью соответствует его официальным требованиям и видимому контенту. Произвольное поле JSON-LD в админке удаляется.
-
-FAQ остаётся полезным видимым блоком, но не рассматривается как источник Google rich result.
-
-### 7.3 Sitemap и robots
-
-- только canonical published URLs;
-- фактический `lastModified` из версии контента;
-- admin/API/preview не попадают в sitemap;
-- sitemap index вводится только при реальной необходимости;
-- robots не используется как замена auth/noindex;
-- после deploy sitemap отправляется в Яндекс Вебмастер и Search Console.
-
-### 7.4 Перелинковка
+## 11. CI/CD
 
 ```text
-Главная → категории → калькуляторы
-Калькулятор → реальная категория
-Калькулятор → 3–6 следующих релевантных задач
-Trust/content page → соответствующие калькуляторы
+npm ci
+→ lint
+→ typecheck
+→ unit/component tests + coverage
+→ build
+→ dependency/license checks
+→ E2E against standalone artifact
+→ Lighthouse/link/schema checks
+→ immutable artifact
+→ staging smoke
+→ production atomic deploy
+→ post-deploy smoke/rollback
 ```
 
-Не создавать orphan pages и не связывать страницы только потому, что у них одинаковый математический тип.
+Удалённый Git repository в baseline не настроен. Local commits и deploy по SSH возможны; создание/подключение remote фиксируется отдельно до push.
 
-## 8. UX/UI-система
+## 12. План и зависимости
 
-### 8.1 Визуальное направление
+Оценки являются forecast, а не quality deadline. Они предполагают автономную реализацию с параллельными review-потоками; внешний доступ к DNS/репозиторию может изменить календарное время.
 
-- спокойная техническая идентичность, но не безликий admin UI;
-- один сильный accent для действий и результата;
-- ясная типографическая иерархия;
-- границы используются для структуры, а не вокруг каждого блока;
-- умеренные hover/focus состояния допустимы и нужны для affordance;
-- анимация только функциональная и с поддержкой reduced motion.
+| Workstream | Зависит от | Optimistic | Expected | Pessimistic | Gate |
+|---|---|---:|---:|---:|---|
+| Документы/ADR/baseline | — | 0.5 д | 1 д | 2 д | Documentation review approved |
+| P0 toolchain/security | baseline | 1 д | 2 д | 4 д | green install/lint/type/test/build/audit policy |
+| Catalog/routes/platform | P0 | 1.5 д | 3 д | 5 д | registry/SEO/redirect tests |
+| Design system/shell/search | catalog contract | 1.5 д | 3 д | 5 д | responsive/a11y component gate |
+| Existing formula correction | quality spec | 1 д | 2 д | 4 д | independent golden review |
+| 10 new launch tools/content | shell + quality spec | 3 д | 6 д | 10 д | all 14 page DoD |
+| E2E/performance/security | integrated site | 1.5 д | 3 д | 5 д | release candidate review |
+| Server/TLS/deploy/verification | artifact + access | 1 д | 2 д | 4 д | production smoke + rollback |
 
-Старое правило «никаких hover/анимаций и только прямоугольники» не должно быть абсолютным. Оно не улучшает доступность само по себе и мешает отличать интерактивные элементы.
+При параллельной работе expected critical path: **12–18 рабочих дней**; optimistic: 8–10; pessimistic: 20–30 при существенном rework/внешних блокерах. Предыдущая неподтверждённая оценка 7–10 дней отменена.
 
-### 8.2 Calculator shell
+Quality cut-line не снижается ради даты. Если сроки сжимаются, уменьшается только число непроиндексированных Wave 2 функций; 14 launch URL являются текущим утверждённым scope и меняются только обновлением manifest.
 
-Desktop:
+## 13. Реализационные этапы и review gates
 
-- form и result panel в двух колонках;
-- result остаётся видимым при разумной длине формы;
-- related/sidebar не уменьшает рабочую область.
+### Gate A — документы
 
-Mobile:
+- baseline SHA записан;
+- ADR Accepted;
+- manifest точен;
+- correctness/input/UI/deploy/privacy спецификации измеримы;
+- независимое documentation review — approved.
 
-- одна колонка;
-- progressive disclosure для дополнительных параметров;
-- live result сразу после активной группы;
-- sticky summary допустим, если не закрывает keyboard/fields;
-- минимум элементов перед калькулятором.
+### Gate B — P0 platform
 
-### 8.3 Доступность
+- secure dependencies;
+- зелёные lint/type/test/build;
+- admin/DB/arbitrary HTML удалены из production path;
+- env/CSP/health/logging готовы;
+- независимое code/security review — approved.
 
-- semantic headings/forms;
-- label/id и понятные units;
-- keyboard navigation и видимый focus;
-- ошибки через текст + `aria-describedby`/live region;
-- touch targets ≥44×44;
-- contrast WCAG AA;
-- графики имеют table/text equivalent;
-- native date control сопровождается локализованным представлением.
+### Gate C — foundation
 
-## 9. Безопасность и эксплуатация
+- registry/routes/redirects/search/shell;
+- main/category/trust pages;
+- metadata/schema/sitemap/robots;
+- responsive foundation;
+- architecture/SEO/UX review — approved.
 
-### 9.1 Production topology
+### Gate D — calculator catalog
 
-```text
-Internet
-  → DNS
-  → nginx/reverse proxy или CDN с валидным TLS
-  → Next.js Node 22 application
-  → PostgreSQL только при необходимости runtime-данных
-  → Sentry/logs/uptime monitoring
-```
+- 14 manifest tools;
+- formula/content/source/accessibility tests;
+- independent formula/product review — approved.
 
-Reverse proxy выполняет request limits, размер body, timeout и базовую фильтрацию некорректных запросов. Источник: [Next.js Self-hosting](https://nextjs.org/docs/app/guides/self-hosting).
+### Gate E — release candidate
 
-### 9.2 Обязательные меры
+- E2E, browser matrix, Lighthouse, link/schema/security;
+- deploy/rollback artifact;
+- final review — approved.
 
-- env schema и отказ старта при отсутствии production secrets;
-- никаких fallback credentials;
-- закрытая админка на первом релизе;
-- security headers из одного источника;
-- CSP без произвольных scripts;
-- dependency audit в CI;
-- миграции отдельным контролируемым шагом;
-- backup + проверяемый restore;
-- Sentry instrumentation и global error handler;
-- uptime/5xx alert;
-- логирование без персональных/секретных данных.
+### Gate F — production
 
-## 10. CI/CD
+- valid TLS/canonical redirects;
+- smoke/health/monitoring;
+- sitemap/Webmaster/Search Console;
+- rollback drill;
+- documentation updated with release SHA and evidence.
 
-Минимальный pipeline:
+## 14. Measurable page DoD
 
-1. `npm ci`.
-2. Prisma generate.
-3. ESLint.
-4. TypeScript.
-5. Unit/component tests.
-6. Production build.
-7. Dependency audit policy.
-8. Deploy staging.
-9. Smoke/E2E staging.
-10. Ручной promotion production.
-11. Post-deploy smoke и rollback при ошибке.
+Calculator URL готов, если:
 
-Baseline и каждую фазу следует фиксировать отдельными коммитами. Нельзя начинать массовую переработку, пока текущий исходник не зафиксирован первым коммитом.
+- 100% обязательных fields definition schema присутствуют;
+- golden/boundary/property tests зелёные с документированной tolerance;
+- минимум 3 независимых worked examples совпадают с результатом;
+- formula/source/review/assumption metadata видимы;
+- default state выдаёт корректный результат;
+- axe: 0 critical/serious;
+- keyboard smoke проходит;
+- 360×800 и 390×844: нет page horizontal scroll и основное действие доступно без блокирующей рекламы;
+- 1366×768: form и primary result одновременно видны для short tool;
+- canonical/breadcrumb/related targets существуют;
+- structured data соответствует видимому HTML;
+- unit/component/E2E route tests зелёные.
 
-## 11. Дорожная карта
+## 15. Measurable release DoD
 
-### Этап 0 — P0, дни 1–2
-
-- baseline-коммит;
-- безопасные версии Next.js/React и совместимые обновления зависимостей;
-- исправление теста, TypeScript, ESLint и build;
-- env validation и удаление fallback secrets;
-- отключение admin/write routes в production;
-- единая CSP;
-- рабочая production DB либо исключение DB из public render path;
-- vhost, валидный TLS и canonical redirect.
-
-Результат: приложение технически можно развернуть, но каталог ещё не считается SEO-ready.
-
-### Этап 1 — фундамент, дни 3–4
-
-- типизированный catalog registry;
-- категории и новые маршруты;
-- redirect map;
-- новый calculator shell;
-- поиск и главная;
-- metadata/structured data/sitemap/robots;
-- trust/legal pages;
-- `next/font`;
-- CI и staging.
-
-Результат: готов повторяемый шаблон для наполнения.
-
-### Этап 2 — контент и калькуляторы, дни 5–8
-
-- переработка пяти текущих инструментов;
-- добавление 7–10 новых по утверждённому launch catalog;
-- edge-case unit tests;
-- формулы, примеры, источники, limitations и updatedAt;
-- related links;
-- responsive/accessibility/component/E2E проверки.
-
-Результат: 12–15 страниц проходят единый quality gate.
-
-### Этап 3 — запуск, дни 9–10
-
-- production deploy;
-- проверка HTTP/HTTPS/www/canonical/404/500;
-- проверка robots и sitemap на production host;
-- smoke/E2E на типовых ширинах;
-- CWV/Lighthouse baseline;
-- Sentry, uptime и backup;
-- Яндекс Вебмастер/Search Console;
-- отправка sitemap и нескольких ключевых URL на переобход.
-
-Результат: индексируемый первый релиз.
-
-### Первые 30 дней
-
-- ежедневный контроль 5xx/404/crawl на первой неделе;
-- анализ индексации, canonical и запросов;
-- исправление UX по session/analytics только при корректной privacy-конфигурации;
-- 2–3 новых качественных калькулятора в неделю;
-- приоритет по Wordstat/Webmaster/Search Console, а не по размеру каталога конкурентов;
-- рекламу включать постепенно после подтверждения, что она не ухудшает task completion и CWV.
-
-## 12. Definition of Done калькулятора
-
-Страница считается готовой, если:
-
-- имеет один ясный search/user intent;
-- формула реализована чистой функцией;
-- покрыты happy path, границы, invalid input и числовая стабильность;
-- результат проверен независимым примером;
-- есть понятные labels/units/errors;
-- есть реалистичные defaults или объяснено их отсутствие;
-- desktop/mobile результат появляется без лишней прокрутки;
-- есть формула, worked example, limitations, источники и дата проверки;
-- нет неподтверждённых утверждений и выдуманного автора/эксперта;
-- metadata/canonical/breadcrumbs/related links корректны;
-- structured data соответствует видимому содержимому;
-- отсутствует реклама до первого полезного результата;
-- страница проходит unit, component/E2E, accessibility smoke и responsive matrix.
-
-## 13. Definition of Done релиза
-
-- все P0 закрыты;
-- CI полностью зелёный;
-- 12–15 калькуляторов проходят page DoD;
-- нет broken internal links и orphan pages;
-- нет публичных draft/admin/write endpoints;
-- валидный HTTPS и единый canonical host;
-- sitemap содержит только опубликованные canonical URL с реальным lastmod;
-- CWV baseline измерен, критические regressions отсутствуют;
-- monitoring/uptime/backup/rollback проверены;
-- документация deploy и контентного обновления актуальна.
-
-## 14. Решения, которые не входят в первый релиз
-
-- микросервисы;
-- Redis и очереди без доказанной нагрузки;
-- полноценная многопользовательская CMS;
-- тысячи автоматически созданных страниц;
-- персональные кабинеты;
-- сложная рекламная платформа;
-- массовая локализация;
-- псевдоэкспертные профили ради E-E-A-T.
-
-Эти функции рассматриваются только после появления измеримого пользовательского или операционного запроса.
-
+- CI pipeline exit 0;
+- 14/14 manifest calculators проходят page DoD;
+- 0 broken internal links;
+- 0 unknown published registry components;
+- 0 unresolved reachable critical vulnerabilities; high имеют исправление либо временное exception с owner/expiry;
+- Lighthouse budgets выполнены на representative pages;
+- production HTTPS/canonical/redirect/sitemap/robots/404/health проверены;
+- test alert доставлен либо документирован log/uptime fallback;
+- rollback на предыдущий artifact выполнен в test drill ≤ 10 минут;
+- RPO публичного code-first content = Git/release artifact; mutable production data отсутствуют;
+- release SHA и результаты gates записаны в документации.
