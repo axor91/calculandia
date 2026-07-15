@@ -38,14 +38,27 @@ Finding первого запуска зафиксирован, а не скры
 
 Оба времени значительно ниже RTO 10 минут. Mutable data/migration boundary отсутствует.
 
-## 4. Boot persistence
+## 4. Bounded-concurrency smoke
+
+После forward activation выполнено 500 loopback requests с concurrency 20:
+
+| Route                  | Requests | HTTP 200 | Average |  Maximum |
+| ---------------------- | -------: | -------: | ------: | -------: |
+| `/`                    |      200 |      200 | 79.2 ms | 153.2 ms |
+| `/kalkulyator/ipoteka` |      200 |      200 | 29.2 ms |  94.9 ms |
+| `/healthz`             |      100 |      100 | 61.3 ms | 100.8 ms |
+
+Systemd cgroup memory peak после burst — 113,610,752 bytes, ниже restart threshold 512 MiB. Process остался active, health SHA не изменился; повторная проверка manifest и writable bits прошла.
+
+## 5. Boot persistence
 
 - отдельный `calculandia-pm2.service` включён в systemd;
-- `User/Group=calculandia`, `ProtectSystem=strict`, `NoNewPrivileges=yes`, writable path ограничен `/var/lib/calculandia`;
+- `User/Group=calculandia`, `ProtectSystem=strict`, `NoNewPrivileges=yes`, `UMask=0027`, writable path ограничен `/var/lib/calculandia`;
 - PM2 daemon был штатно остановлен после `pm2 save`, затем восстановлен через `systemctl start calculandia-pm2`;
 - process и `/healthz` восстановились с тем же release SHA.
+- nginx/application/candidate logs имеют mode `0640`; candidate script создаёт файл с конечными owner/mode до старта process.
 
-## 5. nginx и TLS
+## 6. nginx и TLS
 
 - custom http-context config, log format без query/referrer/user-agent, rate-limit zone и production template прошли `nginx -t`;
 - Let's Encrypt certificate выдан для `calculandia.ru` и `www.calculandia.ru`, срок действия: 2026-07-15 — 2026-10-13;
@@ -54,7 +67,7 @@ Finding первого запуска зафиксирован, а не скры
 - active holding vhost: HTTP `301` на canonical HTTPS; HTTPS `503`, `X-Robots-Tag: noindex, nofollow, noarchive`, `Retry-After: 3600`; сертификат валиден;
 - loopback application остаётся недоступным из Internet до legal/operator approval.
 
-## 6. Незакрытые Production Gate evidence
+## 7. Незакрытые Production Gate evidence
 
 1. Operator identity/address/privacy contact и уведомление Роскомнадзора либо подтверждённое действующее исключение.
 2. Финальный policy commit, green CI и immutable deployment этого же SHA.

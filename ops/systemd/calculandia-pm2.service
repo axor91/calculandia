@@ -12,6 +12,7 @@ Environment=PM2_HOME=/var/lib/calculandia/.pm2
 Environment=PATH=/opt/nodejs/node-v22.22.2-linux-x64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
 PIDFile=/var/lib/calculandia/.pm2/pm2.pid
 WorkingDirectory=/var/lib/calculandia
+UMask=0027
 ExecStart=/opt/nodejs/node-v22.22.2-linux-x64/bin/node /usr/lib/node_modules/pm2/bin/pm2 resurrect
 ExecReload=/opt/nodejs/node-v22.22.2-linux-x64/bin/node /usr/lib/node_modules/pm2/bin/pm2 reload all
 ExecStop=/opt/nodejs/node-v22.22.2-linux-x64/bin/node /usr/lib/node_modules/pm2/bin/pm2 kill
