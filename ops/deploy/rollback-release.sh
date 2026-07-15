@@ -41,10 +41,15 @@ pm2_run() {
 pm2_run restart calculandia-web --update-env
 pm2_run save
 
-health=$(curl --fail --silent --show-error --max-time 5 \
-  http://127.0.0.1:3212/healthz)
-[[ $health == *"\"version\":\"$sha\""* ]] || {
-  echo "Rollback identity check failed" >&2
-  exit 1
-}
-echo "Rolled back to healthy release $sha"
+for _ in $(seq 1 60); do
+  health=$(curl --silent --show-error --max-time 2 \
+    http://127.0.0.1:3212/healthz 2>/dev/null || true)
+  if [[ $health == *'"status":"ok"'* && $health == *"\"version\":\"$sha\""* ]]; then
+    echo "Rolled back to healthy release $sha"
+    exit 0
+  fi
+  sleep 0.25
+done
+
+echo "Rollback identity check failed" >&2
+exit 1

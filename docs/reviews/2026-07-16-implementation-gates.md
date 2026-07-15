@@ -84,6 +84,6 @@ Release Candidate отдельно подтверждён clean remote commit `b
 1. Проверяемая идентичность владельца/оператора, адрес и privacy contact.
 2. Финальный policy/ops `origin/main` commit и зелёный GitHub CI.
 3. Переключение valid-TLS holding на production proxy и external smoke.
-4. Exact-SHA monitor failure simulation/success и rollback drill с evidence.
+4. Exact-SHA monitor failure simulation/success; rollback drill уже подтверждён на internal releases.
 
 Ни одно из этих условий не подменяется локальным review verdict.
