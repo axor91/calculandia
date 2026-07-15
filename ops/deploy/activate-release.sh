@@ -57,6 +57,7 @@ if ss -ltnH 'sport = :3213' | grep -q .; then
   exit 1
 fi
 
+install -o calculandia -g calculandia -m 0640 /dev/null "$candidate_log"
 (
   cd "$release"
   exec runuser -u calculandia -- env \
