@@ -28,14 +28,18 @@ rm -f "$temporary_link"
 ln -s "releases/$sha" "$temporary_link"
 mv -Tf "$temporary_link" "$app_root/current"
 
-runuser -u calculandia -- env \
-  HOME=/var/lib/calculandia \
-  PM2_HOME=/var/lib/calculandia/.pm2 \
-  "$node" "$pm2" restart calculandia-web --update-env
-runuser -u calculandia -- env \
-  HOME=/var/lib/calculandia \
-  PM2_HOME=/var/lib/calculandia/.pm2 \
-  "$node" "$pm2" save
+pm2_run() {
+  (
+    cd /var/lib/calculandia
+    runuser -u calculandia -- env \
+      HOME=/var/lib/calculandia \
+      PM2_HOME=/var/lib/calculandia/.pm2 \
+      "$node" "$pm2" "$@"
+  )
+}
+
+pm2_run restart calculandia-web --update-env
+pm2_run save
 
 health=$(curl --fail --silent --show-error --max-time 5 \
   http://127.0.0.1:3212/healthz)

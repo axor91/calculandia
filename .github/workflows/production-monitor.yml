@@ -16,16 +16,20 @@ permissions:
 
 jobs:
   uptime:
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.PRODUCTION_MONITOR_ENABLED == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: HTTPS and application health
+        env:
+          EXPECTED_RELEASE: ${{ vars.PRODUCTION_RELEASE_SHA }}
         run: |
           set -euo pipefail
+          [[ "$EXPECTED_RELEASE" =~ ^[0-9a-f]{40}$ ]]
           curl --fail --silent --show-error --max-time 15 https://calculandia.ru/ >/dev/null
           curl --fail --silent --show-error --max-time 15 https://calculandia.ru/sitemap.xml >/dev/null
           response="$(curl --fail --silent --show-error --max-time 15 https://calculandia.ru/healthz)"
-          node -e 'const value=JSON.parse(process.argv[1]); if(value.status!=="ok" || !/^[0-9a-f]{40}$/.test(value.version)) process.exit(1)' "$response"
+          node -e 'const value=JSON.parse(process.argv[1]); if(value.status!=="ok" || value.version!==process.argv[2]) process.exit(1)' "$response" "$EXPECTED_RELEASE"
       - name: TLS has more than 14 days remaining
         run: |
           set -euo pipefail
