@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Calculandia host health check every five minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+RandomizedDelaySec=15s
+AccuracySec=15s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

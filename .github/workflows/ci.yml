@@ -32,6 +32,9 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:coverage
       - run: npm run test:artifact-tools
+      - run: npm run test:ops-tools
+      - run: sudo apt-get update && sudo apt-get install --no-install-recommends --yes nginx
+      - run: npm run test:nginx-config
       - run: npm run audit:prod
       - run: npm run build
         env:

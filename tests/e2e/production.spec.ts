@@ -185,6 +185,7 @@ test("changed primary result is announced without invalidating unrelated fields"
   page,
 }) => {
   await page.goto("/kalkulyator/procent-ot-chisla");
+  await expect(page.locator('[data-calculator-ready="true"]')).toBeVisible();
   await page.getByLabel("Число").fill("2500");
   await expect(
     page
