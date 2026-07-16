@@ -164,6 +164,15 @@ if (
     "Host checker cannot combine runuser privilege drop with RestrictSUIDSGID",
   );
 }
+if (
+  /runuser\s+-u\s+calculandia/.test(hostCheckScript) &&
+  /^(?:User|Group)=/m.test(hostCheckService)
+) {
+  throw new Error(
+    "Host checker cannot declare User=/Group=: explicit User= with " +
+      "NoNewPrivileges plus a seccomp option clears CAP_SETUID and breaks runuser",
+  );
+}
 
 const workflow = await readFile(
   path.join(projectRoot, ".github/workflows/ci.yml"),
