@@ -3,7 +3,13 @@ import { productionOrigin } from "@/lib/site";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [{ userAgent: "*", allow: "/", disallow: ["/healthz", "/api/"] }],
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: ["/healthz", "/host-healthz", "/api/"],
+      },
+    ],
     sitemap: `${productionOrigin}/sitemap.xml`,
     host: productionOrigin,
   };

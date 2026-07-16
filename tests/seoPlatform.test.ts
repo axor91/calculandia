@@ -16,7 +16,13 @@ describe("SEO platform", () => {
 
   it("keeps technical endpoints out of crawling", () => {
     expect(robots()).toMatchObject({
-      rules: [{ userAgent: "*", allow: "/", disallow: ["/healthz", "/api/"] }],
+      rules: [
+        {
+          userAgent: "*",
+          allow: "/",
+          disallow: ["/healthz", "/host-healthz", "/api/"],
+        },
+      ],
       sitemap: "https://calculandia.ru/sitemap.xml",
     });
   });

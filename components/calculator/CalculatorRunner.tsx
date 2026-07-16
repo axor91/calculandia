@@ -1,5 +1,8 @@
+"use client";
+
 import type { CalculatorComponentId } from "@/catalog";
 import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 
 const calculators: Record<CalculatorComponentId, React.ComponentType> = {
   "percent-of-number": dynamic(() =>
@@ -61,6 +64,18 @@ export default function CalculatorRunner({
 }: {
   component: CalculatorComponentId;
 }) {
+  const [interactive, setInteractive] = useState(false);
   const Component = calculators[component];
-  return <Component />;
+
+  useEffect(() => setInteractive(true), []);
+
+  return (
+    <div
+      data-calculator-ready={interactive ? "true" : "false"}
+      aria-busy={!interactive}
+      inert={!interactive}
+    >
+      <Component />
+    </div>
+  );
 }
