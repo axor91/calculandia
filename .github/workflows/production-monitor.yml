@@ -23,13 +23,17 @@ jobs:
       - name: HTTPS and application health
         env:
           EXPECTED_RELEASE: ${{ vars.PRODUCTION_RELEASE_SHA }}
+          EXPECTED_RESTARTS: ${{ vars.PRODUCTION_PM2_RESTART_BASELINE }}
         run: |
           set -euo pipefail
           [[ "$EXPECTED_RELEASE" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$EXPECTED_RESTARTS" =~ ^[0-9]+$ ]]
           curl --fail --silent --show-error --max-time 15 https://calculandia.ru/ >/dev/null
           curl --fail --silent --show-error --max-time 15 https://calculandia.ru/sitemap.xml >/dev/null
           response="$(curl --fail --silent --show-error --max-time 15 https://calculandia.ru/healthz)"
           node -e 'const value=JSON.parse(process.argv[1]); if(value.status!=="ok" || value.version!==process.argv[2]) process.exit(1)' "$response" "$EXPECTED_RELEASE"
+          host_response="$(curl --fail --silent --show-error --max-time 15 https://calculandia.ru/host-healthz)"
+          node -e 'const value=JSON.parse(process.argv[1]); const now=Math.floor(Date.now()/1000); if(value.status!=="ok" || value.release!==process.argv[2] || !Number.isSafeInteger(value.checkedAt) || now-value.checkedAt<0 || now-value.checkedAt>660 || String(value.pm2Restarts)!==process.argv[3]) process.exit(1)' "$host_response" "$EXPECTED_RELEASE" "$EXPECTED_RESTARTS"
       - name: TLS has more than 14 days remaining
         run: |
           set -euo pipefail
