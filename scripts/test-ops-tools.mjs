@@ -146,6 +146,25 @@ execFileSync(process.execPath, ["--check", "ops/pm2/ecosystem.config.cjs"], {
   stdio: "pipe",
 });
 
+const [hostCheckScript, hostCheckService] = await Promise.all([
+  readFile(
+    path.join(projectRoot, "ops/monitor/calculandia-host-check.sh"),
+    "utf8",
+  ),
+  readFile(
+    path.join(projectRoot, "ops/systemd/calculandia-host-check.service"),
+    "utf8",
+  ),
+]);
+if (
+  /runuser\s+-u\s+calculandia/.test(hostCheckScript) &&
+  /^RestrictSUIDSGID=(?:true|yes)$/m.test(hostCheckService)
+) {
+  throw new Error(
+    "Host checker cannot combine runuser privilege drop with RestrictSUIDSGID",
+  );
+}
+
 const workflow = await readFile(
   path.join(projectRoot, ".github/workflows/ci.yml"),
   "utf8",
