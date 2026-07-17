@@ -18,7 +18,9 @@ npx playwright install --with-deps chromium firefox webkit
 npm run check
 ```
 
-`npm run check` выполняет lint, typecheck, coverage, artifact/ops regressions, production dependency gate, build, standalone smoke, Chromium/Firefox/WebKit E2E и Lighthouse. CI дополнительно проверяет реальные nginx templates, требует clean Git-bound release artifact, загружает его с вложенным `.next`, скачивает обратно и сверяет `BUILD_ID` и полный SHA-256 manifest.
+Локальные наборы: `check:pr` (быстрый гейт уровня PR: quality, build, bundle budget, Chromium E2E), `check:ops` (artifact/ops/nginx-регрессии), `check:release` (полный релизный контур c трёхбраузерной матрицей), `check` (release + Lighthouse).
+
+CI разрезан по классам изменений: PR-гейт `production-gate` классифицирует diff (docs/ops/app/dependencies, неизвестные пути fail-safe запускают всё), выполняет только релевантные jobs и сводит их в единственный required-контекст `verify` (always-running агрегатор). Полный релизный контур — workflow `release` на push в main: артефакт с download round-trip (`BUILD_ID` + полный SHA-256 manifest) и параллельная Chromium/Firefox/WebKit матрица по скачанному exact-артефакту. Lighthouse ушёл в nightly (5 прогонов, медиана); на критическом пути его заменяет детерминированный gzip-бюджет First-Load JS.
 
 Одна moderate build-time уязвимость nested PostCSS документирована временным exception до 15 августа 2026 года; high/critical блокируют gate.
 

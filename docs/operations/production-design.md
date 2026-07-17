@@ -72,9 +72,16 @@ TLS: ACME/Let's Encrypt с автоматическим renew и проверк�
 
 До legal/operator approval точный vhost может находиться только в holding-state: валидный TLS, `503 + Retry-After + X-Robots-Tag: noindex`; приложение при этом доступно лишь на loopback. Parking `200` не используется как ложный сигнал готовности.
 
+## 4a. CI pipeline (с 2026-07-17)
+
+- **PR-гейт** `production-gate`: job `classify` относит diff к классам docs/ops/app/dependencies (неизвестный путь fail-safe запускает полный набор; классификатор покрыт unit-тестами). По классам выполняются `docs-contract` (всегда: формат docs, целостность внутренних ссылок), `quality`, `build-smoke` (build, standalone smoke, gzip bundle-budget, Chromium E2E), `ops-check`, `dependency-audit`. Единственный required-контекст branch protection — `verify`: always-running агрегатор, который сверяет результат каждого job с классификацией (неожиданный skipped = fail). Playwright-браузеры кэшируются.
+- **Release** (push в main, non-cancellable): `quality` + `artifact` (build, `release:verify`, upload/download round-trip c exact `BUILD_ID` и полным SHA-256 manifest) → параллельная матрица `e2e` Chromium/Firefox/WebKit, каждая по скачанному exact-артефакту → `release-gate` (агрегатор; будущая точка привязки автодеплоя).
+- **Nightly**: Lighthouse 5 прогонов с медианной агрегацией и калиброванными бюджетами, отчёты сохраняются артефактами 30 дней; полный `npm audit`. Performance-регрессии не блокируют срочный deploy — они алертят.
+- Бюджеты производительности на критическом пути: детерминированный gzip-размер First-Load JS (`scripts/test-bundle-budget.mjs`, baseline ~106.5 KiB, бюджет 125 KiB) вместо флейкующего TBT на shared runners.
+
 ## 5. Deployment sequence
 
-1. Local/CI release gates green.
+1. Local/CI release gates green (required `verify` на PR + `release-gate` на main).
 2. Создать standalone artifact из clean commit; build записывает `.next/BUILD_ID = SHA`, streaming scanner проверяет все файлы без size exception, затем создаётся и проверяется `ARTIFACT.sha256`.
 3. Передать в новый `/releases/{sha}` без изменения `current`; server guard повторно проверяет exact inventory, hashes, ownership, modes и равенство BUILD_ID/directory SHA.
 4. Установить `root:root`, directories `0555`, files `0444`; `sudo -u calculandia test ! -w release` и пробный create/modify обязаны завершиться отказом.
