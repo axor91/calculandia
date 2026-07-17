@@ -10,8 +10,10 @@ Baseline исходного проекта зафиксирован коммит
 - npm: `10.9.7`.
 - SHA-256 исходного `package-lock.json`: `5e5dfa1f630b8540bdde43af8e2b6975a174d23594b317597d7b1e1692a6b778`.
 - Documentation, P0 platform и calculator correctness gates: **Approved** после повторных независимых ревью.
-- Release Candidate gate: в работе; clean commit/remote CI ещё не зафиксированы.
-- Production gate: **не утверждён**; публичный запуск запрещён до operator/privacy approval, TLS/deploy/monitor/rollback evidence.
+- Release Candidate gate (release engineering): **Approved**; PR #1–#3 merged с green required CI, artifact round-trip доказан независимой загрузкой, live install/forward/rollback drills и 5-минутный host monitor подтверждены под holding.
+- Catalog Wave 2 (14 → 30, manifest v1.1): 16 новых калькуляторов реализованы по полному quality-контракту; deploy нового каталога остаётся под holding до Production Gate.
+- Public state: valid-TLS holding `503 + noindex`; приложение доступно только на loopback.
+- Production gate: **Blocked внешними данными**; публичный запуск запрещён до operator/privacy approval, финального policy release, external smoke и включения exact-SHA monitor.
 
 ## Нормативные документы
 
@@ -31,6 +33,7 @@ Baseline исходного проекта зафиксирован коммит
 14. [`research/2026-07-16-visual-implementation-review.md`](research/2026-07-16-visual-implementation-review.md) — viewport/browser evidence реализованного интерфейса.
 15. [`legal/production-privacy-checklist.md`](legal/production-privacy-checklist.md) — фактический data flow, обязательные данные оператора и legal Production Gate.
 16. [`operations/2026-07-16-preproduction-evidence.md`](operations/2026-07-16-preproduction-evidence.md) — remote CI, immutable server candidate, process isolation, boot и TLS/holding evidence.
+17. [`reviews/2026-07-16-production-completion-audit.md`](reviews/2026-07-16-production-completion-audit.md) — requirement-by-requirement completion audit, artifact round-trip finding и точный Production Gate.
 
 ## Принятые решения
 

@@ -15,7 +15,23 @@ export type CalculatorSlug =
   | "vozrast"
   | "beton"
   | "plitka"
-  | "oboi";
+  | "oboi"
+  | "srednee-znachenie"
+  | "nod-nok"
+  | "kvadratnoe-uravnenie"
+  | "ploshchad-figur"
+  | "slozhnyj-procent"
+  | "nakopleniya"
+  | "refinansirovanie"
+  | "skidka"
+  | "skolko-dnej-do"
+  | "raznica-dat"
+  | "den-nedeli"
+  | "kalkulyator-vremeni"
+  | "kraska"
+  | "laminat"
+  | "kirpich"
+  | "shtukaturka";
 
 export type CalculatorComponentId =
   | "percent-of-number"
@@ -31,7 +47,23 @@ export type CalculatorComponentId =
   | "age"
   | "concrete"
   | "tile"
-  | "wallpaper";
+  | "wallpaper"
+  | "mean"
+  | "gcd-lcm"
+  | "quadratic-equation"
+  | "shape-area"
+  | "compound-interest"
+  | "savings-goal"
+  | "refinance"
+  | "discount"
+  | "countdown"
+  | "date-difference"
+  | "weekday"
+  | "time-calculator"
+  | "paint"
+  | "laminate"
+  | "brick"
+  | "plaster";
 
 export type SourceRecord = {
   title: string;

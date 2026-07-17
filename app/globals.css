@@ -71,6 +71,8 @@
   h2,
   h3 {
     text-wrap: balance;
+    overflow-wrap: break-word;
+    hyphens: auto;
   }
   p {
     text-wrap: pretty;

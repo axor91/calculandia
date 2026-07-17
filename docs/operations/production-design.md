@@ -1,6 +1,6 @@
 # Production design и runbook
 
-- Статус: **Release candidate approved; valid-TLS holding active; public launch blocked by legal/operator input**
+- Статус: **RC `0877ada` установлен и healthy (loopback); hardening PR #1–#3 merged и доказаны live; valid-TLS holding active; public launch blocked by legal/operator input**
 - Target: `calculandia.ru` / `5.188.28.98`
 
 ## 1. Подтверждено
@@ -14,7 +14,9 @@
 - Node `22.22.2` установлен side-by-side с проверкой официального SHA-256; созданы непривилегированный user `calculandia` и изолированные release/state directories.
 - В репозитории зафиксированы проверяемые nginx/PM2/logrotate templates и fail-closed activate/rollback scripts в `ops/`.
 
-Наличие backup/monitoring внешних систем для Calculandia до deploy не обнаружено; состояние других сайтов не является доказательством готовности Calculandia.
+Повторный audit выявил transactional/inventory/monitoring gaps в прежних scripts. Исправления merged в PR #1 (`0877ada`), установлены на сервер из green main с per-file SHA-256 сверкой и доказаны live drill'ами. Host monitor дополнительно исправлен PR #2/#3 (несовместимости systemd-hardening с runuser privilege drop) и работает на 5-минутном таймере; см. [`2026-07-16-preproduction-evidence.md`](2026-07-16-preproduction-evidence.md).
+
+Mutable launch data отсутствуют, поэтому отдельный application backup не требуется; Git и immutable releases обеспечивают RPO 0 для публичного контента. External GitHub monitor реализован, но намеренно отключён repository variable до публичного proxy switch, чтобы holding `503` не создавал ложные incidents. Состояние других сайтов не используется как доказательство готовности Calculandia.
 
 ## 2. Layout
 
@@ -31,11 +33,12 @@
   current -> releases/{sha}
 
 /var/lib/calculandia/.pm2/
+/var/lib/calculandia/monitor/health.json
 ```
 
 `/var/www/calculandia`, releases и `current` принадлежат `root:root`. Release directories имеют mode `0555`, regular files `0444`; отдельный system user `calculandia` не входит в root/web-admin groups и не имеет write access к release tree. Его writable state ограничен `/var/lib/calculandia/.pm2` и выделенным log directory. Последние три healthy release сохраняются.
 
-`ARTIFACT.sha256` покрывает каждый файл кроме самого manifest. `.next/BUILD_ID` создаётся из clean full Git SHA и сверяется с manifest/release directory; suffix `-dirty` допустим только для локального review и блокирует production transfer.
+`ARTIFACT.sha256` покрывает каждый файл кроме корневого manifest. `.next/BUILD_ID` создаётся из clean full Git SHA и сверяется с manifest/release directory; suffix `-dirty` допустим только для локального review и блокирует production transfer. Server guard дополнительно требует exact inventory без extra/symlink/special/CRLF/environment files, `root:root`, отсутствие write bits, обязательные server/static files и непустой static tree.
 
 Calculandia build/runtime используют Node `22.22.2` из `/opt/nodejs/node-v22.22.2-linux-x64`. Перед установкой официальный tarball сверяется с published `SHASUMS256.txt`. Глобальные `node/npm` не заменяются, чтобы не затронуть другие сайты. Local/CI и production major/minor совпадают; patch upgrade выполняется отдельным dependency/runtime maintenance commit.
 
@@ -50,6 +53,7 @@ Calculandia build/runtime используют Node `22.22.2` из `/opt/nodejs/
 - memory restart threshold задаётся после измерения, initial 512 MiB;
 - graceful reload после healthcheck нового artifact;
 - stdout/stderr проходят PM2 log rotation, secrets/input values не логируются.
+- candidate и PM2 CLI запускаются через `env -i`; SSH/deploy environment не наследуется приложением.
 
 ## 4. nginx
 
@@ -72,17 +76,17 @@ TLS: ACME/Let's Encrypt с автоматическим renew и проверк�
 
 1. Local/CI release gates green.
 2. Создать standalone artifact из clean commit; build записывает `.next/BUILD_ID = SHA`, streaming scanner проверяет все файлы без size exception, затем создаётся и проверяется `ARTIFACT.sha256`.
-3. Передать в новый `/releases/{sha}` без изменения `current`; повторно проверить manifest и равенство BUILD_ID/directory SHA.
+3. Передать в новый `/releases/{sha}` без изменения `current`; server guard повторно проверяет exact inventory, hashes, ownership, modes и равенство BUILD_ID/directory SHA.
 4. Установить `root:root`, directories `0555`, files `0444`; `sudo -u calculandia test ! -w release` и пробный create/modify обязаны завершиться отказом.
 5. Запустить candidate standalone artifact на `127.0.0.1:3213` отдельным временным process именно от `calculandia` с Node 22.
 6. `curl http://127.0.0.1:3213/healthz` ожидает 200 и immutable `version = candidate SHA`, даже если runtime env содержит другое значение; затем проверяются representative HTML и static assets именно на `3213`.
 7. Гарантированно остановить temporary candidate process и подтвердить освобождение `3213`, включая failure path через shell trap.
-8. Atomic `ln -sfn releases/{sha} current`.
-9. PM2 reload/start от `calculandia` с явными `PM2_HOME` и Node 22 interpreter; release identity через env не передаётся.
-10. `curl http://127.0.0.1:3212/healthz` ожидает 200 и тот же candidate SHA. Несовпадение немедленно запускает rollback.
-11. `nginx -t`, reload только при config change.
-12. External smoke HTTPS/canonical/headers/pages/assets и повторная проверка release SHA через публичный health endpoint.
-13. Сохранить evidence и пометить release healthy.
+8. Общий nonblocking `flock` сериализует activate/rollback/publish; затем выполняется atomic symlink switch.
+9. PM2 reload/start от `calculandia` с чистым environment, явными `PM2_HOME` и Node 22 interpreter; release identity через env не передаётся.
+10. `curl http://127.0.0.1:3212/healthz` ожидает 200 и тот же candidate SHA. Любая command/health/save failure транзакционно восстанавливает previous symlink/process и bounded exact health; непроверенный fallback возвращает critical exit 2.
+11. Host checker создаёт свежий exact-SHA marker; publish script атомарно ставит production config, выполняет `nginx -t`/reload и вооружает EXIT trap на known holding config.
+12. External smoke проверяет host/runtime health, все 25 sitemap URL, отсутствие noindex, canonical, schema, redirects, headers, TLS, robots, assets, sources и `404`. Любая ошибка автоматически возвращает holding и reload.
+13. Отдельный GitHub run подтверждает внешний контур; только после этого сохраняется evidence и release помечается public healthy.
 
 ## 6. Rollback
 
@@ -96,11 +100,11 @@ Trigger:
 
 Procedure:
 
-1. Выбрать предыдущий healthy SHA.
-2. Переключить `current` symlink.
-3. `pm2 reload calculandia-web --update-env`.
-4. Проверить local/external health and smoke.
-5. Не удалять failed artifact до RCA.
+1. Выбрать guard-verified previous healthy SHA.
+2. Под общим lock запомнить original target и атомарно переключить `current`.
+3. Выполнить clean-env PM2 restart и bounded exact health.
+4. При restart/health/save failure атомарно восстановить original symlink, restart, exact health и PM2 dump; отсутствие подтверждённого recovery — critical exit 2.
+5. Проверить local/external health and smoke; failed artifact не удалять до RCA.
 
 Target rollback time: ≤10 минут. Поскольку mutable launch DB отсутствует, data rollback не нужен.
 
@@ -114,6 +118,8 @@ Target rollback time: ≤10 минут. Поскольку mutable launch DB о�
 
 Version читается из read-only `.next/BUILD_ID`; `APP_RELEASE` и другие runtime env не могут его подменить. Отсутствующий/невалидный BUILD_ID даёт 503. Endpoint не раскрывает env, paths, dependency versions или host details.
 
+Local root timer каждые пять минут проверяет exact loopback release, systemd/PM2 online state, `unstable_restarts`, disk (<92%, warning с 88%), доступную память (≥256 MiB) и production nginx 5xx rate. Atomic `/host-healthz` marker содержит только status, release, epoch freshness и PM2 restart count; при ошибке marker удаляется. GitHub требует marker не старше 660 секунд и restart count, равный launch baseline.
+
 Minimum monitoring:
 
 - external HTTPS/health/sitemap check из отдельной GitHub infrastructure каждые 30 минут и вручную при deploy;
@@ -123,7 +129,7 @@ Minimum monitoring:
 - disk/memory alerts;
 - sanitized structured server/client-boundary error logs без пользовательских значений.
 
-30-минутный interval удерживает scheduled private-repository job в пределах базовой GitHub Actions quota; переход на 1–5 минут требует отдельного внешнего provider или утверждённого бюджета. PM2 обеспечивает немедленный local restart, а deploy выполняет синхронный external smoke. Scheduled job активируется только repository variable `PRODUCTION_MONITOR_ENABLED=true` и требует точного `PRODUCTION_RELEASE_SHA`; до launch он intentionally skipped. Перед launch вручную запускается failure simulation и подтверждается красный workflow; затем success run на production. Неактивный remote monitor является release blocker.
+30-минутный interval удерживает scheduled private-repository job в пределах базовой GitHub Actions quota; переход на 1–5 минут требует отдельного внешнего provider или утверждённого бюджета. PM2 обеспечивает немедленный local restart, а deploy выполняет синхронный external smoke. Scheduled job активируется только `PRODUCTION_MONITOR_ENABLED=true` и требует точных `PRODUCTION_RELEASE_SHA` и `PRODUCTION_PM2_RESTART_BASELINE`; до launch он intentionally skipped. Перед launch вручную запускается failure simulation и подтверждается красный workflow; затем success run на production. Неактивный remote monitor является release blocker.
 
 ## 8. RTO/RPO/SLO
 
@@ -135,10 +141,9 @@ Minimum monitoring:
 
 ## 9. Git repository и release provenance
 
-Создан private repository `github.com/axor91/calculandia`, remote `origin` настроен, baseline и release candidate опубликованы в `main`. До production release остаются:
+Создан private repository `github.com/axor91/calculandia`, remote `origin` настроен, baseline и previous release candidate опубликованы в `main`. Branch protection подтверждён: required `verify` применяется к admins, strict linear history, force-push и deletion запрещены. Repository требует action SHA pinning; CI dependencies закреплены полными commit SHA. Загруженный release artifact обязан пройти download round-trip с exact `BUILD_ID` и полным manifest; первое remote доказательство ожидается от PR #1/main revalidation. До production release остаются:
 
 - успешный обязательный CI workflow на финальный policy/ops commit;
-- проверка доступности branch protection для текущего GitHub plan;
 - сохранение production SHA, идентичного remote commit, `.next/BUILD_ID` и release directory.
 
 Deploy напрямую из dirty tree или commit, отсутствующего в `origin/main`, запрещён.

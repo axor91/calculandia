@@ -14,15 +14,15 @@ describe("launch catalog", () => {
 
   it("contains exactly the approved launch cut line", () => {
     expect(categories).toHaveLength(4);
-    expect(calculators).toHaveLength(14);
-    expect(getPublishedCalculators()).toHaveLength(14);
+    expect(calculators).toHaveLength(30);
+    expect(getPublishedCalculators()).toHaveLength(30);
   });
 
   it("publishes every category with its full group", () => {
-    expect(getCategoryCalculators("matematika")).toHaveLength(4);
-    expect(getCategoryCalculators("finansy")).toHaveLength(4);
-    expect(getCategoryCalculators("data-i-vremya")).toHaveLength(3);
-    expect(getCategoryCalculators("stroitelstvo")).toHaveLength(3);
+    expect(getCategoryCalculators("matematika")).toHaveLength(8);
+    expect(getCategoryCalculators("finansy")).toHaveLength(8);
+    expect(getCategoryCalculators("data-i-vremya")).toHaveLength(7);
+    expect(getCategoryCalculators("stroitelstvo")).toHaveLength(7);
   });
 
   it("keeps paths, slugs and related targets deterministic", () => {

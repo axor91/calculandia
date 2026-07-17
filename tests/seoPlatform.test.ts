@@ -8,7 +8,7 @@ describe("SEO platform", () => {
   it("publishes a unique canonical sitemap without legacy URLs", () => {
     const entries = sitemap();
     const urls = entries.map((entry) => entry.url);
-    expect(entries).toHaveLength(25);
+    expect(entries).toHaveLength(41);
     expect(new Set(urls).size).toBe(urls.length);
     expect(urls).toContain("https://calculandia.ru/kalkulyator/ipoteka");
     expect(urls.some((url) => url.includes("/calculator/"))).toBe(false);

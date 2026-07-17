@@ -17,6 +17,22 @@ export const calculatorComponentIds = [
   "concrete",
   "tile",
   "wallpaper",
+  "mean",
+  "gcd-lcm",
+  "quadratic-equation",
+  "shape-area",
+  "compound-interest",
+  "savings-goal",
+  "refinance",
+  "discount",
+  "countdown",
+  "date-difference",
+  "weekday",
+  "time-calculator",
+  "paint",
+  "laminate",
+  "brick",
+  "plaster",
 ] as const satisfies readonly CalculatorComponentId[];
 
 export type CatalogIssue = {
@@ -50,10 +66,10 @@ export function validateCatalog(): CatalogIssue[] {
       message: "Launch catalog must contain exactly four categories",
     });
   }
-  if (calculators.length !== 14) {
+  if (calculators.length !== 30) {
     issues.push({
       path: "calculators",
-      message: "Launch catalog must contain exactly fourteen calculators",
+      message: "Launch catalog must contain exactly thirty calculators",
     });
   }
 
