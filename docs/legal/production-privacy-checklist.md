@@ -24,6 +24,8 @@
 
 Analytics, advertising, replay, cookies авторизации, accounts, runtime database и contact form отсутствуют. Необязательные cookies приложением не устанавливаются.
 
+На 2026-07-16 DNS публикует MX `mx1.beget.com`/`mx2.beget.com` и SPF redirect на Beget. Это подтверждает только наличие почтового маршрута домена: существование и приём писем ящиком `hello@calculandia.ru`, срок хранения и договорную роль провайдера обязан подтвердить оператор. `_dmarc.calculandia.ru` TXT при проверке не обнаружен; настройка DMARC относится к отдельному mail-security P2 и не подменяет проверку privacy contact.
+
 ## 3. Данные, которые обязан подтвердить владелец
 
 1. Полное ФИО физического лица либо полное наименование ИП/ООО.
@@ -48,6 +50,33 @@ Analytics, advertising, replay, cookies авторизации, accounts, runtim
 - реализованные организационные и технические меры без раскрытия чувствительных деталей;
 - правило предварительного review для analytics, ads, forms, accounts и внешнего error provider.
 
-## 5. Release decision
+## 5. Безопасная передача и legal sign-off
 
-До заполнения раздела 3 и подтверждения уведомления/исключения разрешены build, CI, private server candidate и rollback drill. Переключение публичного nginx vhost с parking на приложение и отправка URL на индексацию запрещены.
+### Публичные поля
+
+В текущий закрытый рабочий канал владелец передаёт текстом только сведения, которые после проверки должны войти в публичную policy: наименование/ФИО и статус оператора, применимые ИНН/ОГРН/ОГРНИП, адрес, privacy contact, наименования hosting/mail processors, утверждённые цели и сроки, а также номер и дату уведомления Роскомнадзора либо формулировку проверенного исключения. Для каждого поля явно указывается `подтверждено` или `не применимо`; пустое поле не трактуется как согласие.
+
+### Только для приватной проверки
+
+Сканы паспорта, выписки, договоры, доступы к почте/хостингу, секреты и иные документы с избыточными персональными данными нельзя добавлять в Git, issue, CI artifact или публичную policy. Если они нужны проверяющему, владелец передаёт их через отдельно согласованное приватное хранилище. В репозитории фиксируются только непрозрачный reference доказательства, дата проверки и verdict, без URL с token, копий документов и скрытых реквизитов.
+
+### Запись, закрывающая blocker
+
+Legal reviewer либо сам оператор при документированном принятии риска создаёт в release evidence запись следующего вида:
+
+```text
+approver: <ФИО/роль>
+approved_at: <ISO 8601 с часовым поясом>
+scope: Calculandia launch data flow, редакция policy <дата/commit>
+operator_fields: complete
+privacy_mailbox_control: verified, evidence <private reference>
+hosting_mail_roles: verified, evidence <private reference>
+rkn_basis: notification <дата/номер> | reviewed exception <private reference>
+verdict: approved for public launch
+```
+
+Gate закрывается только когда публичные поля заполнены без placeholders, privacy mailbox проверен, evidence references существуют, approver/date/scope зафиксированы и финальная policy прошла clean commit и remote CI. Ответ «данные позже» или неподтверждённый e-mail blocker не закрывает.
+
+## 6. Release decision
+
+До заполнения раздела 3, выполнения sign-off из раздела 5 и подтверждения уведомления/исключения разрешены build, CI, private server candidate и rollback drill. Переключение публичного nginx vhost с holding `503 + noindex` на production proxy и отправка URL на индексацию запрещены.

@@ -1,9 +1,9 @@
 # Launch manifest
 
 - Статус: **Approved for implementation**
-- Версия: `1.0`
-- Дата: 2026-07-15
-- Launch cut-line: **14 индексируемых калькуляторов**. Ни один условный URL не входит в release.
+- Версия: `1.1`
+- Дата: 2026-07-16 (v1.0 — 2026-07-15)
+- Launch cut-line: **30 индексируемых калькуляторов** (v1.0: 14; v1.1 добавляет Wave 2 из 16 URL по решению владельца от 2026-07-16 «14 калькуляторов мало»). Ни один условный URL не входит в release.
 
 ## 1. Правила manifest
 
@@ -32,13 +32,45 @@
 |  13 | Строительство | `/kalkulyator/plitka`                | Оценить количество плитки                         | surface/tile/openings/reserve → pieces/boxes/area                               | Area/ceiling to package + reserve                            | Engineering + construction assumptions review | 12, 14        | новый URL                         |
 |  14 | Строительство | `/kalkulyator/oboi`                  | Оценить число рулонов обоев                       | room/openings/roll/repeat/reserve → strips/rolls                                | Perimeter, usable strips with repeat, ceiling                | Engineering + construction assumptions review | 12, 13        | новый URL                         |
 
+## 2a. Wave 2 — расширение до 30 (утверждено 2026-07-16)
+
+Правила раздела 1 действуют без изменений. Все 16 URL остаются в четырёх существующих категориях: новые category hubs не открываются, пока текущие не доказали индексацию. Каждый URL проходит полный [`calculator-quality-standard.md`](calculator-quality-standard.md) gate до публикации. Частотные объёмы Wordstat по-прежнему не заявляются; приоритет определён повторяемостью intent у исследованных конкурентов (см. раздел 4 и research) и переиспользованием уже проверенных движков (amortization, percent, calendar, construction units/openings).
+
+|   # | Category      | Canonical URL                       | Основной intent                                  | Ввод → результат                                                             | Formula/reference basis                                                  | Переиспользование           |
+| --: | ------------- | ----------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------- |
+|  15 | Математика    | `/kalkulyator/srednee-znachenie`    | Среднее арифметическое и взвешенное списка чисел | список значений (+веса) → среднее, сумма, количество                         | Definition of arithmetic/weighted mean                                   | number parsing/result utils |
+|  16 | Математика    | `/kalkulyator/nod-nok`              | НОД и НОК двух и более целых чисел               | целые числа → НОД, НОК, шаги                                                 | Euclidean GCD; `lcm = a×b / gcd`                                         | GCD из fractions engine     |
+|  17 | Математика    | `/kalkulyator/kvadratnoe-uravnenie` | Решить квадратное уравнение                      | a, b, c → корни/дискриминант, вершина                                        | Closed-form discriminant (детерминированный, НЕ общий solver из §3)      | number/result utils         |
+|  18 | Математика    | `/kalkulyator/ploshchad-figur`      | Площадь базовых фигур                            | фигура + размеры → площадь                                                   | Классические формулы: прямоугольник, треугольник (Герон), круг, трапеция | режимный UI как у №1        |
+|  19 | Финансы       | `/kalkulyator/slozhnyj-procent`     | Рост суммы со сложным процентом                  | сумма/ставка/срок/период капитализации → итог, доход                         | Compound interest recurrence                                             | deposit recurrence engine   |
+|  20 | Финансы       | `/kalkulyator/nakopleniya`          | Сколько откладывать в месяц до цели              | цель/срок/ставка → требуемый ежемесячный взнос                               | Future value of annuity, inverse; сверка forward-рекуррентой             | deposit recurrence engine   |
+|  21 | Финансы       | `/kalkulyator/refinansirovanie`     | Выгода рефинансирования кредита                  | текущий кредит (остаток/ставка/срок) + новая ставка → экономия, новый платёж | Два annuity schedules, разница total interest                            | shared amortization engine  |
+|  22 | Финансы       | `/kalkulyator/skidka`               | Цена со скидкой и экономия                       | цена/процент(ы) скидки → итоговая цена, экономия                             | Percent-of-number; последовательные скидки перемножением                 | percent engine              |
+|  23 | Дата и время  | `/kalkulyator/skolko-dnej-do`       | Сколько дней осталось до даты                    | целевая дата (+точка отсчёта) → дни, недели+дни                              | Local Gregorian date arithmetic                                          | days-between engine         |
+|  24 | Дата и время  | `/kalkulyator/raznica-dat`          | Разница между датами в годах/месяцах/днях        | две даты → полные Y/M/D                                                      | Calendar-component difference                                            | age engine                  |
+|  25 | Дата и время  | `/kalkulyator/den-nedeli`           | День недели по дате                              | дата → день недели                                                           | Gregorian weekday (детерминированный алгоритм по calendar tuple)         | calendar utils              |
+|  26 | Дата и время  | `/kalkulyator/kalkulyator-vremeni`  | Сложение и вычитание времени                     | интервалы чч:мм → сумма/разность, нормализация в дни                         | Sexagesimal arithmetic on minutes                                        | новый малый модуль          |
+|  27 | Строительство | `/kalkulyator/kraska`               | Расход краски и число банок                      | стены/проёмы/расход/слои/объём банки → литры, банки                          | Area × coverage × layers; package ceiling                                | walls/openings utils        |
+|  28 | Строительство | `/kalkulyator/laminat`              | Количество ламината                              | комната/упаковка/запас → м², упаковки                                        | Area / pack area + reserve; ceiling                                      | room area/units utils       |
+|  29 | Строительство | `/kalkulyator/kirpich`              | Количество кирпича                               | стена/проёмы/формат кирпича/шов/толщина кладки → штук + запас                | Wall volume / (brick+joint volume); форматы по ГОСТ 530                  | walls/openings utils        |
+|  30 | Строительство | `/kalkulyator/shtukaturka`          | Расход штукатурки и число мешков                 | площадь/толщина слоя/расход/фасовка → кг, мешки                              | Area × thickness × consumption; package ceiling                          | area/units utils            |
+
+Итог по категориям: Математика 8, Финансы 8, Дата и время 7, Строительство 7. Sitemap: 7 статических + 4 категории + 30 калькуляторов = **41 URL**.
+
+Замечания по границам scope:
+
+- №17 не отменяет исключение общего solver уравнений (§3): квадратное уравнение решается закрытой формулой без итераций, полнота гарантирована.
+- №21 не использует внешние текущие ставки (source policy §5): обе ставки вводит пользователь; страница явно сообщает, что комиссии/страховки при рефинансировании не моделируются.
+- №23 использует явное поле «точка отсчёта» с дефолтом «сегодня» на клиенте; тесты фиксируют asOf, недетерминированного `Date.now()` в математике нет.
+- №29/№30 используют видимые редактируемые коэффициенты (§5); справочные значения — из ГОСТ/manufacturer sources с типом записи.
+
 ## 3. Не публикуется в первой волне
 
 | Baseline/idea           | Решение                             | Причина                                                                                 | Условие возврата                                                                                              |
 | ----------------------- | ----------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `/calculator/equations` | 404; отсутствует в registry/sitemap | Недетерминированный Newton solver, synchronous main-thread load, не гарантирует полноту | Отдельный scope/spec, deterministic solver или честно ограниченный numerical tool, complexity limits и worker |
 | Рабочие дни РФ          | Не показывать режим и URL           | Baseline calendar неверен; официальные переносы меняются ежегодно                       | ADR-0003 data gate и version-controlled official calendars                                                    |
-| Среднее значение        | Wave 2                              | Низкая роль в launch clusters относительно обязательных страниц                         | После первой индексации                                                                                       |
+| ~~Среднее значение~~    | Перенесено в Wave 2 (§2a, №15)      | —                                                                                       | Закрыто v1.1                                                                                                  |
 | Налоги/зарплата/пособия | Wave 2+                             | Изменяемое законодательство/YMYL                                                        | Primary-source update owner и review SLA                                                                      |
 | Здоровье                | Wave 2+                             | Высокий trust/YMYL риск                                                                 | Medical source/reviewer policy                                                                                |
 

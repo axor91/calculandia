@@ -1,4 +1,8 @@
 import type { CalculatorDefinition, SourceRecord } from "./types";
+import { constructionWave2 } from "./wave2/construction";
+import { dateWave2 } from "./wave2/date";
+import { financeWave2 } from "./wave2/finance";
+import { mathWave2 } from "./wave2/math";
 
 const methodologySource = {
   title: "Методология Calculandia",
@@ -78,7 +82,7 @@ const shared = {
   sourceCheckedAt: "2026-07-16",
 };
 
-export const calculators = [
+const wave1 = [
   {
     ...shared,
     slug: "procent-ot-chisla",
@@ -1220,4 +1224,12 @@ export const calculators = [
     ],
     related: ["plitka", "beton"],
   },
+] as const satisfies readonly CalculatorDefinition[];
+
+export const calculators = [
+  ...wave1,
+  ...mathWave2,
+  ...financeWave2,
+  ...dateWave2,
+  ...constructionWave2,
 ] as const satisfies readonly CalculatorDefinition[];

@@ -16,6 +16,22 @@ const calculatorRoutes = [
   "beton",
   "plitka",
   "oboi",
+  "srednee-znachenie",
+  "nod-nok",
+  "kvadratnoe-uravnenie",
+  "ploshchad-figur",
+  "slozhnyj-procent",
+  "nakopleniya",
+  "refinansirovanie",
+  "skidka",
+  "skolko-dnej-do",
+  "raznica-dat",
+  "den-nedeli",
+  "kalkulyator-vremeni",
+  "kraska",
+  "laminat",
+  "kirpich",
+  "shtukaturka",
 ] as const;
 
 type AxeViolation = {
@@ -266,7 +282,7 @@ test("sitemap routes and their internal links are healthy", async ({
   const paths = [
     ...sitemapXml.matchAll(/<loc>https:\/\/calculandia\.ru([^<]*)<\/loc>/g),
   ].map((match) => match[1] || "/");
-  expect(paths).toHaveLength(25);
+  expect(paths).toHaveLength(41);
 
   const internalPaths = new Set(paths);
   for (const path of paths) {

@@ -6,56 +6,114 @@ import { useEffect, useState } from "react";
 
 const calculators: Record<CalculatorComponentId, React.ComponentType> = {
   "percent-of-number": dynamic(() =>
-    import("./MathCalculators").then(
+    import("./math/PercentOfNumber").then(
       (module) => module.PercentOfNumberCalculator,
     ),
   ),
   "percent-change": dynamic(() =>
-    import("./MathCalculators").then(
+    import("./math/PercentChange").then(
       (module) => module.PercentChangeCalculator,
     ),
   ),
   fractions: dynamic(() =>
-    import("./MathCalculators").then((module) => module.FractionsCalculator),
+    import("./math/Fractions").then((module) => module.FractionsCalculator),
   ),
   proportion: dynamic(() =>
-    import("./MathCalculators").then((module) => module.ProportionCalculator),
+    import("./math/Proportion").then((module) => module.ProportionCalculator),
+  ),
+  mean: dynamic(() =>
+    import("./math/Mean").then((module) => module.MeanCalculator),
+  ),
+  "gcd-lcm": dynamic(() =>
+    import("./math/GcdLcm").then((module) => module.GcdLcmCalculator),
+  ),
+  "quadratic-equation": dynamic(() =>
+    import("./math/QuadraticEquation").then(
+      (module) => module.QuadraticEquationCalculator,
+    ),
+  ),
+  "shape-area": dynamic(() =>
+    import("./math/ShapeArea").then((module) => module.ShapeAreaCalculator),
   ),
   mortgage: dynamic(() =>
-    import("./FinanceCalculators").then((module) => module.MortgageCalculator),
+    import("./finance/Mortgage").then((module) => module.MortgageCalculator),
   ),
   credit: dynamic(() =>
-    import("./FinanceCalculators").then((module) => module.CreditCalculator),
+    import("./finance/Credit").then((module) => module.CreditCalculator),
   ),
   deposit: dynamic(() =>
-    import("./FinanceCalculators").then((module) => module.DepositCalculator),
+    import("./finance/Deposit").then((module) => module.DepositCalculator),
   ),
   "early-repayment": dynamic(() =>
-    import("./FinanceCalculators").then(
+    import("./finance/EarlyRepayment").then(
       (module) => module.EarlyRepaymentCalculator,
     ),
   ),
+  "compound-interest": dynamic(() =>
+    import("./finance/CompoundInterest").then(
+      (module) => module.CompoundInterestCalculator,
+    ),
+  ),
+  "savings-goal": dynamic(() =>
+    import("./finance/SavingsGoal").then(
+      (module) => module.SavingsGoalCalculator,
+    ),
+  ),
+  refinance: dynamic(() =>
+    import("./finance/Refinance").then((module) => module.RefinanceCalculator),
+  ),
+  discount: dynamic(() =>
+    import("./finance/Discount").then((module) => module.DiscountCalculator),
+  ),
   "days-between": dynamic(() =>
-    import("./DateCalculators").then((module) => module.DaysBetweenCalculator),
+    import("./date/DaysBetween").then((module) => module.DaysBetweenCalculator),
   ),
   "add-date": dynamic(() =>
-    import("./DateCalculators").then((module) => module.AddDateCalculator),
+    import("./date/AddDate").then((module) => module.AddDateCalculator),
   ),
   age: dynamic(() =>
-    import("./DateCalculators").then((module) => module.AgeCalculator),
+    import("./date/Age").then((module) => module.AgeCalculator),
+  ),
+  countdown: dynamic(() =>
+    import("./date/Countdown").then((module) => module.CountdownCalculator),
+  ),
+  "date-difference": dynamic(() =>
+    import("./date/DateDifference").then(
+      (module) => module.DateDifferenceCalculator,
+    ),
+  ),
+  weekday: dynamic(() =>
+    import("./date/Weekday").then((module) => module.WeekdayCalculator),
+  ),
+  "time-calculator": dynamic(() =>
+    import("./date/Time").then((module) => module.TimeCalculator),
   ),
   concrete: dynamic(() =>
-    import("./ConstructionCalculators").then(
+    import("./construction/Concrete").then(
       (module) => module.ConcreteCalculator,
     ),
   ),
   tile: dynamic(() =>
-    import("./ConstructionCalculators").then((module) => module.TileCalculator),
+    import("./construction/Tile").then((module) => module.TileCalculator),
   ),
   wallpaper: dynamic(() =>
-    import("./ConstructionCalculators").then(
+    import("./construction/Wallpaper").then(
       (module) => module.WallpaperCalculator,
     ),
+  ),
+  paint: dynamic(() =>
+    import("./construction/Paint").then((module) => module.PaintCalculator),
+  ),
+  laminate: dynamic(() =>
+    import("./construction/Laminate").then(
+      (module) => module.LaminateCalculator,
+    ),
+  ),
+  brick: dynamic(() =>
+    import("./construction/Brick").then((module) => module.BrickCalculator),
+  ),
+  plaster: dynamic(() =>
+    import("./construction/Plaster").then((module) => module.PlasterCalculator),
   ),
 };
 
