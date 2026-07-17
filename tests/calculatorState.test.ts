@@ -60,6 +60,13 @@ describe("calculator input and share state", () => {
     ).toBeNull();
   });
 
+  it("refuses to share a value that would be truncated instead of corrupting it", () => {
+    const longList = Array.from({ length: 20 }, (_, i) => i + 1).join(", ");
+    expect(longList.length).toBeGreaterThan(32);
+    expect(encodeShareState("demo", { values: longList })).toBeNull();
+    expect(encodeShareState("demo", { values: "2, 4, 9" })).not.toBeNull();
+  });
+
   it("formats a local calendar day without converting it to UTC", () => {
     const localDate = new Date(2026, 6, 16, 0, 5, 0);
     expect(localCalendarDate(localDate)).toBe("2026-07-16");
