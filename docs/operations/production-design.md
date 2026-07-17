@@ -33,7 +33,7 @@ Mutable launch data отсутствуют, поэтому отдельный ap
   current -> releases/{sha}
 
 /var/lib/calculandia/.pm2/
-/var/lib/calculandia/monitor/health.json
+/var/lib/calculandia-monitor/health.json
 ```
 
 `/var/www/calculandia`, releases и `current` принадлежат `root:root`. Release directories имеют mode `0555`, regular files `0444`; отдельный system user `calculandia` не входит в root/web-admin groups и не имеет write access к release tree. Его writable state ограничен `/var/lib/calculandia/.pm2` и выделенным log directory. Последние три healthy release сохраняются.
