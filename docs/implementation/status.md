@@ -16,7 +16,7 @@
 
 - Git remote: private `github.com/axor91/calculandia`; `main` protected, required `verify` applies to admins, Actions require full-SHA pinning. Цепочка merged main: `0877ada` (hardening, PR #1) → `84b3910` (monitor RestrictSUIDSGID, PR #2) → `7273832` (monitor User=/CAP_SETUID, PR #3) — все с green required CI; артефакты обоих релизных SHA независимо скачаны и сверены (BUILD_ID + полный SHA-256 manifest).
 - SSH production access: подтверждён через alias `kappers-prod`.
-- Production runtime: Node `22.22.2`, отдельный user/systemd/PM2 c clean environment (SSH-переменные удалены одноразовой перерегистрацией), immutable release `0877ada` активен только на `127.0.0.1:3212`; boot recovery проверен.
+- Production runtime: Node `22.22.2`, отдельный user/systemd/PM2 c clean environment (SSH-переменные удалены одноразовой перерегистрацией), immutable release `f4762df` (Wave 2, 30 калькуляторов) активен только на `127.0.0.1:3212`; boot recovery проверен.
 - TLS: действующий Let's Encrypt для apex/www, simulated renewal green; deploy-hook реально выполняет `nginx -t` + reload.
 - Public vhost: holding `503 + noindex + Retry-After`; parking `200` устранён, приложение наружу не proxy; активный конфиг байт-в-байт равен holding-шаблону.
 - Rollback/forward drill новым комплектом скриптов: `0877ada → 0ab55a6 → 0877ada`, 2.95 s / 7.20 s, exact symlink/BUILD_ID/health identity confirmed.
