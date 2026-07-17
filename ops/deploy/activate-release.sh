@@ -6,8 +6,10 @@ if [[ ${EUID} -ne 0 ]]; then
   exit 1
 fi
 
-exec 9>/run/lock/calculandia-release.lock
-flock -n 9 || { echo "Another Calculandia release operation is running" >&2; exit 1; }
+if [[ ${CALCULANDIA_LOCK_HELD:-0} != 1 ]]; then
+  exec 9>/run/lock/calculandia-release.lock
+  flock -n 9 || { echo "Another Calculandia release operation is running" >&2; exit 1; }
+fi
 
 sha=${1:-}
 if [[ ! $sha =~ ^[0-9a-f]{40}$ ]]; then
