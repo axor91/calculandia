@@ -81,6 +81,8 @@ TLS: ACME/Let's Encrypt с автоматическим renew и проверк�
 
 ## 5. Deployment sequence
 
+Стандартный путь — автоматический: см. [`auto-deploy.md`](auto-deploy.md) (workflow `deploy` выполняет шаги 2–13 серверной транзакцией после green `release`). Последовательность ниже остаётся нормативной спецификацией и ручным fallback.
+
 1. Local/CI release gates green (required `verify` на PR + `release-gate` на main).
 2. Создать standalone artifact из clean commit; build записывает `.next/BUILD_ID = SHA`, streaming scanner проверяет все файлы без size exception, затем создаётся и проверяется `ARTIFACT.sha256`.
 3. Передать в новый `/releases/{sha}` без изменения `current`; server guard повторно проверяет exact inventory, hashes, ownership, modes и равенство BUILD_ID/directory SHA.
