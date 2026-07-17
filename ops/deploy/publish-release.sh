@@ -7,7 +7,7 @@ if [[ ${EUID} -ne 0 ]]; then
 fi
 
 if [[ ${CALCULANDIA_LOCK_HELD:-0} != 1 ]]; then
-  exec 9>/run/lock/calculandia-release.lock
+  exec 9>"${CALCULANDIA_LOCK_FILE:-/run/lock/calculandia-release.lock}"
   flock -n 9 || { echo "Another Calculandia release operation is running" >&2; exit 1; }
 fi
 
