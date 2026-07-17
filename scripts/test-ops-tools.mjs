@@ -203,6 +203,104 @@ if (!workflowsCombined.includes("cancel-in-progress: false")) {
   throw new Error("Release pipeline must not be cancellable mid-run");
 }
 
+// --- Failure injection: SSH forced-command gate must reject everything that
+// is not a well-formed typed command, before reaching any executable.
+const gate = path.join(projectRoot, "ops/ssh/calculandia-ssh-gate.sh");
+function runGate(originalCommand) {
+  return spawnSync("bash", [gate], {
+    encoding: "utf8",
+    env: { ...process.env, SSH_ORIGINAL_COMMAND: originalCommand },
+  });
+}
+const rejectedCommands = [
+  "",
+  "foobar",
+  "deploy",
+  "deploy notasha 123",
+  "deploy f4762df17ce2655cd624ba097e3a0b3d86a2f80d",
+  "deploy f4762df17ce2655cd624ba097e3a0b3d86a2f80d abc",
+  "deploy f4762df17ce2655cd624ba097e3a0b3d86a2f80d 1 extra",
+  "rollback",
+  "rollback short",
+  "rollback f4762df17ce2655cd624ba097e3a0b3d86a2f80d extra",
+  "status now",
+  "deploy $(id) 1",
+  "deploy f4762df17ce2655cd624ba097e3a0b3d86a2f80d 1; id",
+];
+for (const command of rejectedCommands) {
+  const result = runGate(command);
+  if (result.status === 0) {
+    throw new Error(`SSH gate accepted a malformed command: "${command}"`);
+  }
+  if (/uid=|calculandia-deploy-release/.test(result.stdout)) {
+    throw new Error(`SSH gate leaked execution for: "${command}"`);
+  }
+}
+
+// --- Failure injection: the release lock must exclude a second operation and
+// must be reentrant only via the explicit CALCULANDIA_LOCK_HELD contract.
+// flock(2) nuance proven empirically (kernel 6.8/6.17, util-linux 2.39):
+// descendants of the lock holder can re-acquire through a fresh descriptor,
+// so the holder must be an INDEPENDENT process to model two racing deploys.
+const lockFile = path.join(
+  await mkdtemp(path.join(os.tmpdir(), "calculandia-lock-")),
+  "release.lock",
+);
+const rollbackScript = path.join(projectRoot, "ops/deploy/rollback-release.sh");
+const fakeSha = "b".repeat(40);
+const { spawn } = await import("node:child_process");
+function runRollback(extraEnv) {
+  return spawnSync("bash", [rollbackScript, fakeSha], {
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      CALCULANDIA_LOCK_FILE: lockFile,
+      CALCULANDIA_GUARD_TEST_MODE: "1",
+      ...extraEnv,
+    },
+    timeout: 15_000,
+  });
+}
+const holder = spawn(
+  "bash",
+  ["-c", 'exec 9>"$CALCULANDIA_LOCK_FILE"; flock -n 9 || exit 9; sleep 30'],
+  {
+    env: { ...process.env, CALCULANDIA_LOCK_FILE: lockFile },
+    detached: true,
+    stdio: "ignore",
+  },
+);
+await new Promise((resolve) => setTimeout(resolve, 500));
+try {
+  const contended = runRollback({});
+  if (
+    contended.status === 0 ||
+    !contended.stderr.includes(
+      "Another Calculandia release operation is running",
+    )
+  ) {
+    throw new Error(
+      `Lock contention was not detected: status=${contended.status} stderr=${contended.stderr}`,
+    );
+  }
+  const reentrant = runRollback({ CALCULANDIA_LOCK_HELD: "1" });
+  if (
+    reentrant.stderr.includes(
+      "Another Calculandia release operation is running",
+    )
+  ) {
+    throw new Error("Held-lock mode still failed on lock contention");
+  }
+  if (reentrant.status === 0) {
+    throw new Error(
+      "Rollback of a nonexistent release must fail past the lock stage",
+    );
+  }
+} finally {
+  holder.kill("SIGKILL");
+}
+await rm(path.dirname(lockFile), { recursive: true, force: true });
+
 console.log(
-  "Ops tool tests passed: release guard negative fixtures, shell/PM2 syntax and full-SHA CI actions",
+  "Ops tool tests passed: release guard negative fixtures, shell/PM2 syntax, gate/lock failure injection and full-SHA CI actions",
 );

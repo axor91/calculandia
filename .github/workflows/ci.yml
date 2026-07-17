@@ -3,6 +3,7 @@ name: production-gate
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: production-gate-${{ github.ref }}
@@ -147,6 +148,34 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
+      - name: Docs impact declaration
+        env:
+          APP_CHANGED: ${{ needs.classify.outputs.app }}
+          OPS_CHANGED: ${{ needs.classify.outputs.ops }}
+          DOCS_CHANGED: ${{ needs.classify.outputs.docs }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const app = process.env.APP_CHANGED === "true";
+            const ops = process.env.OPS_CHANGED === "true";
+            const docs = process.env.DOCS_CHANGED === "true";
+            if (!(app || ops)) process.exit(0);
+            if (docs) process.exit(0);
+            // PR body is untrusted input: read from the event file, never interpolate.
+            const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
+            const body = event.pull_request?.body ?? "";
+            const match = body.match(/Docs impact:\s*([^\n]*)/i);
+            const declaration = match?.[1]?.trim() ?? "";
+            if (declaration.length > 0 && !declaration.startsWith("<!--")) {
+              console.log(`docs impact declared: ${declaration.slice(0, 120)}`);
+              process.exit(0);
+            }
+            console.error(
+              "App/ops changes require either a docs/** diff in this PR or a non-empty " +
+              "\"Docs impact:\" declaration in the PR description (see the PR template).",
+            );
+            process.exit(1);
+          '
       - env:
           NEEDS: ${{ toJSON(needs) }}
         run: |
