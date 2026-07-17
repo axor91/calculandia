@@ -80,11 +80,11 @@ grep -Fq 'Disallow: /api/' "$workdir/robots.txt"
 }
 
 mapfile -t urls < <(grep -oE '<loc>[^<]+</loc>' "$workdir/sitemap.xml" | sed -E 's#</?loc>##g')
-[[ ${#urls[@]} -eq 25 ]] || {
-  echo "Expected 25 sitemap URLs, received ${#urls[@]}" >&2
+[[ ${#urls[@]} -eq 41 ]] || {
+  echo "Expected 41 sitemap URLs, received ${#urls[@]}" >&2
   exit 1
 }
-[[ $(printf '%s\n' "${urls[@]}" | LC_ALL=C sort -u | wc -l) -eq 25 ]] || {
+[[ $(printf '%s\n' "${urls[@]}" | LC_ALL=C sort -u | wc -l) -eq 41 ]] || {
   echo "Sitemap contains duplicate URLs" >&2
   exit 1
 }
@@ -159,4 +159,4 @@ grep -Eiq '<meta name="robots" content="noindex' "$workdir/404.html"
   exit 1
 }
 
-echo "External production smoke passed for $sha: host/runtime health, 25 sitemap URLs, redirects, TLS, headers, schema, assets, sources and 404"
+echo "External production smoke passed for $sha: host/runtime health, 41 sitemap URLs, redirects, TLS, headers, schema, assets, sources and 404"
