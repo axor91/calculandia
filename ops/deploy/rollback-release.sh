@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-if [[ ${EUID} -ne 0 ]]; then
+if [[ ${EUID} -ne 0 && ${CALCULANDIA_GUARD_TEST_MODE:-0} != 1 ]]; then
   echo "rollback-release must run as root" >&2
   exit 1
 fi
 
 if [[ ${CALCULANDIA_LOCK_HELD:-0} != 1 ]]; then
-  exec 9>/run/lock/calculandia-release.lock
+  exec 9>"${CALCULANDIA_LOCK_FILE:-/run/lock/calculandia-release.lock}"
   flock -n 9 || { echo "Another Calculandia release operation is running" >&2; exit 1; }
 fi
 

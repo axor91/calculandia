@@ -42,6 +42,7 @@ jobs:
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
             -o UserKnownHostsFile=~/.ssh/known_hosts \
             -o StrictHostKeyChecking=yes \
             -o BatchMode=yes \

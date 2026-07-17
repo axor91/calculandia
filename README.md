@@ -4,9 +4,7 @@
 
 ## Текущий статус
 
-Каталог расширен до 30 калькуляторов в четырёх категориях (manifest v1.1; 41 индексируемый URL); каждая страница проходит единый контракт качества: golden/property-тесты формул, SEO/crawl-контракты, responsive UI и accessibility в трёх браузерах. Release-engineering hardening завершён: PR #1–#3 merged с green remote CI, immutable release `0877ada` активен на loopback, forward/rollback drills и host monitor подтверждены живыми прогонами под holding. Baseline `1701533` сохранён только как known-broken исходное состояние.
-
-Публичное приложение пока намеренно не открыто: `calculandia.ru` отвечает HTTPS holding `503 + noindex`, пока владелец не предоставит проверяемые реквизиты оператора, privacy contact и подтверждение уведомления Роскомнадзора либо применимого исключения. Точный статус и оставшиеся gates находятся в [`docs/implementation/status.md`](docs/implementation/status.md).
+**Сайт запущен публично** (2026-07-17): `calculandia.ru` отдаёт каталог из 30 калькуляторов в четырёх категориях (manifest v1.1; 41 индексируемый URL). Каждая страница проходит единый контракт качества: golden/property-тесты формул, SEO/crawl-контракты, responsive UI и accessibility в трёх браузерах. Текущий релиз всегда виден в `/healthz`; статус gates — в [`docs/implementation/status.md`](docs/implementation/status.md). Baseline `1701533` сохранён только как known-broken исходное состояние.
 
 Актуальная документация и принятые решения: [`docs/README.md`](docs/README.md).
 
