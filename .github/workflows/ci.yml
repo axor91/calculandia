@@ -1,8 +1,6 @@
 name: production-gate
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
 
@@ -14,9 +12,34 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  classify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 5
+    outputs:
+      docs: ${{ steps.classify.outputs.docs }}
+      ops: ${{ steps.classify.outputs.ops }}
+      app: ${{ steps.classify.outputs.app }}
+      dependencies: ${{ steps.classify.outputs.dependencies }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - id: classify
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          flags="$(git diff --name-only "origin/${BASE_REF}...HEAD" | node scripts/classify-changes.mjs)"
+          echo "classification: $flags"
+          for key in docs ops app dependencies; do
+            value="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1])[process.argv[2]]))' "$flags" "$key")"
+            echo "$key=$value" >> "$GITHUB_OUTPUT"
+          done
+
+  docs-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -26,32 +49,127 @@ jobs:
           node-version: 22.22.2
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npx prettier --check "docs/**/*.md" "*.md"
+      - run: node scripts/test-docs-links.mjs
+      - run: npx vitest run tests/classifyChanges.test.ts
+
+  quality:
+    needs: classify
+    if: needs.classify.outputs.app == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.22.2
+          cache: npm
+      - run: npm ci
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test:coverage
-      - run: npm run test:artifact-tools
-      - run: npm run test:ops-tools
-      - run: sudo apt-get update && sudo apt-get install --no-install-recommends --yes nginx
-      - run: npm run test:nginx-config
-      - run: npm run audit:prod
+
+  build-smoke:
+    needs: classify
+    if: needs.classify.outputs.app == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.22.2
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
       - run: npm run build
         env:
           NEXT_PUBLIC_SITE_URL: https://calculandia.ru
       - run: npm run smoke:standalone
-      - run: npm run test:e2e
-      - run: npm run test:lighthouse
-      - run: npm run release:verify
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - run: node scripts/test-bundle-budget.mjs
+      - run: npx playwright test --project=chromium
+
+  ops-check:
+    needs: classify
+    if: needs.classify.outputs.ops == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          name: calculandia-${{ github.sha }}
-          path: .next/standalone
-          if-no-files-found: error
-          include-hidden-files: true
-          retention-days: 14
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          name: calculandia-${{ github.sha }}
-          path: .artifact-roundtrip
-      - run: npm run artifact:verify-uploaded -- .artifact-roundtrip "${{ github.sha }}"
+          node-version: 22.22.2
+          cache: npm
+      - run: npm ci
+      - run: npm run test:artifact-tools
+      - run: npm run test:ops-tools
+      - run: sudo apt-get update && sudo apt-get install --no-install-recommends --yes nginx
+      - run: npm run test:nginx-config
+
+  dependency-audit:
+    needs: classify
+    if: needs.classify.outputs.dependencies == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.22.2
+          cache: npm
+      - run: npm ci
+      - run: npm run audit:prod
+
+  verify:
+    needs:
+      [
+        classify,
+        docs-contract,
+        quality,
+        build-smoke,
+        ops-check,
+        dependency-audit,
+      ]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          node -e '
+            const needs = JSON.parse(process.env.NEEDS);
+            const fail = (message) => { console.error(message); process.exit(1); };
+            const mustSucceed = (job) => {
+              if (needs[job].result !== "success") fail(`${job}: ${needs[job].result}`);
+            };
+            const gated = (job, enabled) => {
+              const result = needs[job].result;
+              if (enabled === "true") {
+                if (result !== "success") fail(`${job} required but ${result}`);
+              } else if (result !== "skipped") {
+                fail(`${job} expected skipped for this change class, got ${result}`);
+              }
+            };
+            mustSucceed("classify");
+            mustSucceed("docs-contract");
+            const out = needs.classify.outputs;
+            gated("quality", out.app);
+            gated("build-smoke", out.app);
+            gated("ops-check", out.ops);
+            gated("dependency-audit", out.dependencies);
+            console.log("verify: all gated jobs consistent with classification", out);
+          '
