@@ -63,6 +63,25 @@ trap restore_holding EXIT
 
 "$host_check"
 activate_config "$production_config"
+
+# systemctl reload is graceful: for a short window an old worker holding the
+# previous (holding, 503) config can still serve new connections. Wait until
+# the production config is externally active before the strict smoke, bounded
+# so a genuinely broken switch still fails closed.
+config_active=false
+for _ in $(seq 1 30); do
+  code=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 3 https://calculandia.ru/ || true)
+  if [[ $code == 200 ]]; then
+    config_active=true
+    break
+  fi
+  sleep 1
+done
+[[ $config_active == true ]] || {
+  echo "Production config did not become externally active within 30 s" >&2
+  exit 1
+}
+
 "$external_smoke" "$sha"
 
 fail_closed=false
