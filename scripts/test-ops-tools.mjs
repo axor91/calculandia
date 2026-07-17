@@ -126,6 +126,8 @@ const executableScripts = [
   "ops/deploy/publish-release.sh",
   "ops/deploy/rollback-release.sh",
   "ops/deploy/verify-release.sh",
+  "ops/deploy/deploy-release.sh",
+  "ops/ssh/calculandia-ssh-gate.sh",
   "ops/monitor/calculandia-host-check.sh",
   "ops/certbot/20-calculandia-nginx-reload",
 ];
