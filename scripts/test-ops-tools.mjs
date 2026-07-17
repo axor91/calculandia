@@ -174,25 +174,31 @@ if (
   );
 }
 
-const workflow = await readFile(
-  path.join(projectRoot, ".github/workflows/ci.yml"),
-  "utf8",
+const { readdir } = await import("node:fs/promises");
+const workflowDir = path.join(projectRoot, ".github/workflows");
+const workflowFiles = (await readdir(workflowDir)).filter((name) =>
+  name.endsWith(".yml"),
 );
-for (const action of [
-  "checkout",
-  "setup-node",
-  "upload-artifact",
-  "download-artifact",
-]) {
-  if (!new RegExp(`actions/${action}@[0-9a-f]{40}`).test(workflow)) {
-    throw new Error(`GitHub action is not full-SHA pinned: ${action}`);
+let workflowsCombined = "";
+for (const name of workflowFiles) {
+  const contents = await readFile(path.join(workflowDir, name), "utf8");
+  workflowsCombined += contents;
+  const unpinned = contents.match(/uses:\s*[^@\s]+@(?![0-9a-f]{40}\b)\S+/g);
+  if (unpinned) {
+    throw new Error(
+      `GitHub action is not full-SHA pinned in ${name}: ${unpinned.join(", ")}`,
+    );
   }
 }
+const release = await readFile(path.join(workflowDir, "release.yml"), "utf8");
 if (
-  !workflow.includes("include-hidden-files: true") ||
-  !workflow.includes("artifact:verify-uploaded")
+  !release.includes("include-hidden-files: true") ||
+  !release.includes("artifact:verify-uploaded")
 ) {
-  throw new Error("CI artifact upload/download round-trip is incomplete");
+  throw new Error("Release artifact upload/download round-trip is incomplete");
+}
+if (!workflowsCombined.includes("cancel-in-progress: false")) {
+  throw new Error("Release pipeline must not be cancellable mid-run");
 }
 
 console.log(

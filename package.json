@@ -34,7 +34,12 @@
     "test:lighthouse": "lhci autorun",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run lint && npm run typecheck && npm run test:coverage && npm run test:artifact-tools && npm run test:ops-tools && npm run audit:prod && npm run build && npm run smoke:standalone && npm run test:e2e && npm run test:lighthouse"
+    "test:bundle-budget": "node scripts/test-bundle-budget.mjs",
+    "test:docs-links": "node scripts/test-docs-links.mjs",
+    "check:pr": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run test:docs-links && npm run build && npm run smoke:standalone && npm run test:bundle-budget && npx playwright test --project=chromium",
+    "check:ops": "npm run test:artifact-tools && npm run test:ops-tools && npm run test:nginx-config",
+    "check:release": "npm run check:pr && npm run check:ops && npm run audit:prod && npm run test:e2e && npm run release:verify",
+    "check": "npm run check:release && npm run test:lighthouse"
   },
   "dependencies": {
     "next": "15.5.20",
