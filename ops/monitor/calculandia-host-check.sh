@@ -7,7 +7,7 @@ if [[ ${EUID} -ne 0 ]]; then
 fi
 
 app_root=/var/www/calculandia
-monitor_dir=/var/lib/calculandia/monitor
+monitor_dir=/var/lib/calculandia-monitor
 health_file="$monitor_dir/health.json"
 production_config=/etc/calculandia/nginx/production.conf
 active_config=/etc/nginx/sites-enabled/calculandia.conf
