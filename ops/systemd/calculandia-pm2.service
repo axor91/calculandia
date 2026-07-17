@@ -41,6 +41,12 @@ AmbientCapabilities=
 SystemCallArchitectures=native
 LockPersonality=true
 LimitNOFILE=65536
+# Hard cgroup bounds for the shared host: PM2 max_memory_restart is only a
+# restart policy, not a resource limit.
+MemoryHigh=640M
+MemoryMax=768M
+CPUQuota=200%
+TasksMax=256
 
 [Install]
 WantedBy=multi-user.target

@@ -22,7 +22,7 @@ api=https://api.github.com
 node=/opt/nodejs/node-v22.22.2-linux-x64/bin/node
 max_artifact_bytes=$((200 * 1024 * 1024))
 
-exec 9>/run/lock/calculandia-release.lock
+exec 9>"${CALCULANDIA_LOCK_FILE:-/run/lock/calculandia-release.lock}"
 flock -w 30 9 || { echo "Another Calculandia release operation is running" >&2; exit 1; }
 export CALCULANDIA_LOCK_HELD=1
 
@@ -146,4 +146,20 @@ fi
 marker=/var/lib/calculandia-monitor/health.json
 /usr/local/sbin/calculandia-host-check >/dev/null
 restarts=$(grep -oP '"pm2Restarts":\K[0-9]+' "$marker")
+
+# GC only after a fully successful publish: keep the active release plus the
+# three newest others; never touch the current symlink target.
+current_target=$(readlink -f "$app_root/current")
+kept=0
+while IFS= read -r name; do
+  dir=$app_root/releases/$name
+  [[ $(readlink -f "$dir") == "$current_target" ]] && continue
+  kept=$((kept + 1))
+  if ((kept > 3)); then
+    chmod -R u+w "$dir"
+    rm -rf "$dir"
+    echo "GC removed old release $name"
+  fi
+done < <(ls -1t "$app_root/releases")
+
 echo "DEPLOY_OK sha=$sha pm2Restarts=$restarts"

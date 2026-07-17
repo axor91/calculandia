@@ -80,3 +80,15 @@ Gate закрывается только когда публичные поля 
 ## 6. Release decision
 
 До заполнения раздела 3, выполнения sign-off из раздела 5 и подтверждения уведомления/исключения разрешены build, CI, private server candidate и rollback drill. Переключение публичного nginx vhost с holding `503 + noindex` на production proxy и отправка URL на индексацию запрещены.
+
+### Фактическое решение (2026-07-17)
+
+```text
+approver: владелец проекта (axor91), documented risk acceptance
+approved_at: 2026-07-17 (сессия деплой-ревизии)
+scope: публичный запуск calculandia.ru без заполнения разделов 3 и 5
+operator_fields: NOT PROVIDED — владелец явно отклонил требование («нахуй их, выпускай сайт»)
+verdict: launched by owner override
+```
+
+Владелец осознанно принял юридический риск запуска без реквизитов оператора/privacy contact/уведомления РКН. Технические условия (external smoke, monitor, rollback) выполнены полностью. Разделы 3/5 остаются открытыми: при предоставлении данных публичная privacy-страница обновляется отдельным PR, и этот блок дополняется штатной записью sign-off.
