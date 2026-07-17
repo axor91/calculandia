@@ -32,14 +32,14 @@ export function parseLocalizedNumber(
 export function encodeShareState(slug: string, state: ShareState) {
   const params = new URLSearchParams({ calc: slug, v: "1" });
   for (const [key, value] of Object.entries(state)) {
-    params.set(
-      key,
-      typeof value === "boolean"
-        ? value
-          ? "1"
-          : "0"
-        : value.slice(0, MAX_SHARE_VALUE_LENGTH),
-    );
+    if (typeof value === "boolean") {
+      params.set(key, value ? "1" : "0");
+      continue;
+    }
+    // A truncated value would silently restore a DIFFERENT input (and a
+    // different result) on the receiving side; refuse to share instead.
+    if (value.length > MAX_SHARE_VALUE_LENGTH) return null;
+    params.set(key, value);
   }
   const encoded = params.toString();
   return encoded.length <= MAX_SHARE_FRAGMENT_LENGTH ? encoded : null;

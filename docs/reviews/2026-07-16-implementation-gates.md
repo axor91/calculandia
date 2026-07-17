@@ -79,6 +79,42 @@ Release Candidate отдельно подтверждён clean remote commit `b
 
 Финальный независимый verdict: открытых Critical/High/Medium findings нет. Подтверждены 75 passed / 6 intentional skips в полном Chromium/Firefox/WebKit matrix, 51 дополнительная комбинация ширин 320/768/1920 px без overflow и Lighthouse 99/100/100/100 на обеих representative страницах.
 
+## Gate E — повторный production completion audit
+
+### Дополнительный проход — Changes required
+
+После первоначального RC approval проверка не ограничилась зелёным workflow: artifact из run `29458837978` был скачан и оказался без вложенного `.next` из-за default hidden-file exclusion. Run `29459407641` с первичной upload correction затем выявил WebKit interaction до calculator hydration и завершился failure раньше round-trip.
+
+Независимый platform review дополнительно нашёл:
+
+- admin мог обходить required status;
+- activation/rollback не гарантировали bounded exact-health recovery original release во всех restart/health/save failure branches;
+- server verifier не запрещал extra/symlink/wrong-owner/environment files;
+- PM2 наследовал SSH environment deploy-сессии;
+- отсутствовали общий release lock, executable fail-closed public switch и полный external smoke;
+- certbot renewal не имел nginx deploy hook;
+- монитор не покрывал PM2 restarts, nginx 5xx, disk/memory и свежесть host marker;
+- CI не проверял ops negative cases и nginx templates.
+
+### Исправления в PR #1 — Revalidation
+
+- `main` теперь `enforce_admins=true`; repository требует full-SHA action pinning;
+- calculator subtree `inert + aria-busy` до hydration; 10 WebKit repeats и полный local browser matrix green;
+- upload/download round-trip требует hidden files, exact `BUILD_ID` и полный manifest;
+- release guard проверяет exact inventory, hashes, root ownership, modes, required/static files и запрещает links/special/CRLF/environment files;
+- release operations сериализованы общим `flock`; activation/rollback явно восстанавливают и bounded-verify previous release при command/health/save failure;
+- PM2/candidate используют clean environment;
+- publish trap возвращает known holding при любом nginx/external-smoke failure;
+- smoke покрывает свежий host marker, 25 indexable URLs, redirects, TLS, headers, schema, assets, sources и `404`;
+- cert deploy hook и timer-based host monitor добавлены; GitHub проверяет exact SHA, restart baseline и marker freshness;
+- CI запускает guard negative fixtures и `nginx -t` для bootstrap/holding/production templates.
+
+Статический повторный review считает diff P1-clean.
+
+### Закрытие — Approved
+
+Все revalidation-условия выполнены: PR #1 run `29460822088` и exact-main run `29472020743` — success; artifact независимо скачан и сверён вне CI; ops bundle установлен live с per-file SHA-256 сверкой; forward/rollback drill `0877ada → 0ab55a6 → 0877ada` (2.95 s / 7.20 s) выполнен под holding; clean-env PM2 подтверждён (SSH-ключей в process/dump нет, restart baseline 2). Host monitor дополнительно потребовал PR #2 (`RestrictSUIDSGID` vs runuser) и PR #3 (явный `User=`+`NoNewPrivileges`+seccomp очищает CAP_SETUID в systemd 255) — оба фейла были fail-closed, оба фикса merged через green CI и доказаны четырьмя последовательными 5-минутными таймерными циклами. Gate E — **Approved** в объёме release engineering; публичный запуск остаётся за Production Gate F.
+
 ## Незакрытые внешние условия Production Gate
 
 1. Проверяемая идентичность владельца/оператора, адрес и privacy contact.

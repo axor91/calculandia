@@ -25,6 +25,49 @@ export type AgeResult = Readonly<{
   leapDayBirthdayPolicy: typeof leapDayBirthdayPolicy;
 }>;
 
+export type CalendarComponentDifference = Readonly<{
+  years: number;
+  months: number;
+  days: number;
+}>;
+
+export function calculateCalendarComponentDifference(
+  earlier: CalendarDate,
+  later: CalendarDate,
+): CalendarComponentDifference | null {
+  if (
+    !isCalendarDate(earlier) ||
+    !isCalendarDate(later) ||
+    compareCalendarDates(earlier, later) === 1 ||
+    !isWithinCalendarInterval(earlier, later)
+  ) {
+    return null;
+  }
+
+  let years = later.year - earlier.year;
+  let cursor = addYearsClamped(earlier, years);
+  if (!cursor) return null;
+  if (compareCalendarDates(cursor, later) === 1) {
+    years -= 1;
+    cursor = addYearsClamped(earlier, years);
+    if (!cursor) return null;
+  }
+
+  let months = 0;
+  for (let candidateMonths = 1; candidateMonths <= 11; candidateMonths += 1) {
+    const candidate = addMonthsClamped(cursor, candidateMonths);
+    if (!candidate || compareCalendarDates(candidate, later) === 1) break;
+    months = candidateMonths;
+  }
+
+  const monthCursor = addMonthsClamped(cursor, months) as CalendarDate;
+  const days =
+    (calendarDateToOrdinal(later) as number) -
+    (calendarDateToOrdinal(monthCursor) as number);
+
+  return { years, months, days };
+}
+
 function birthdayInYear(
   birthDate: CalendarDate,
   year: number,
@@ -44,33 +87,17 @@ export function calculateAge(input: AgeInput): AgeResult | null {
     !input ||
     typeof input !== "object" ||
     !isCalendarDate(input.birthDate) ||
-    !isCalendarDate(input.asOf) ||
-    compareCalendarDates(input.birthDate, input.asOf) === 1 ||
-    !isWithinCalendarInterval(input.birthDate, input.asOf)
+    !isCalendarDate(input.asOf)
   ) {
     return null;
   }
 
-  let years = input.asOf.year - input.birthDate.year;
-  let cursor = addYearsClamped(input.birthDate, years);
-  if (!cursor) return null;
-  if (compareCalendarDates(cursor, input.asOf) === 1) {
-    years -= 1;
-    cursor = addYearsClamped(input.birthDate, years);
-    if (!cursor) return null;
-  }
-
-  let months = 0;
-  for (let candidateMonths = 1; candidateMonths <= 11; candidateMonths += 1) {
-    const candidate = addMonthsClamped(cursor, candidateMonths);
-    if (!candidate || compareCalendarDates(candidate, input.asOf) === 1) break;
-    months = candidateMonths;
-  }
-
-  const monthCursor = addMonthsClamped(cursor, months) as CalendarDate;
-  const days =
-    (calendarDateToOrdinal(input.asOf) as number) -
-    (calendarDateToOrdinal(monthCursor) as number);
+  const components = calculateCalendarComponentDifference(
+    input.birthDate,
+    input.asOf,
+  );
+  if (!components) return null;
+  const { years, months, days } = components;
 
   let nextBirthday = birthdayInYear(input.birthDate, input.asOf.year);
   if (nextBirthday && compareCalendarDates(nextBirthday, input.asOf) === -1) {

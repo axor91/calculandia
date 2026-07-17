@@ -2,9 +2,13 @@
 
 - Дата: 2026-07-16
 - Первый healthy release: `bdd7c4ce7ca1643c98e734ca20e8273fca423292`
-- Текущий internal release: `0ab55a64a2ca82648fe5ffc205143e71e9f9a70c`
+- Текущий internal release: `0877adaefbf4c492192a79c12cf072053083a155` (предыдущие healthy: `0ab55a6`, `bdd7c4c` сохранены для rollback)
 - Remote: private `github.com/axor91/calculandia`, ветка `main`
-- CI: [application run 29456296520](https://github.com/axor91/calculandia/actions/runs/29456296520) и [operations run 29457751989](https://github.com/axor91/calculandia/actions/runs/29457751989) — **success**
+- CI: [application run 29456296520](https://github.com/axor91/calculandia/actions/runs/29456296520), [operations run 29457751989](https://github.com/axor91/calculandia/actions/runs/29457751989) и [restricted-log run 29458837978](https://github.com/axor91/calculandia/actions/runs/29458837978) — **success**
+- Artifact round-trip correction: `4966680`, [run 29459407641](https://github.com/axor91/calculandia/actions/runs/29459407641) — **failed before upload/download** на WebKit hydration readiness race
+- Release hardening: PR #1 (`1d094e9`, [run 29460822088](https://github.com/axor91/calculandia/actions/runs/29460822088)) — **success**, merged как `0877ada`; exact-main [run 29472020743](https://github.com/axor91/calculandia/actions/runs/29472020743) — **success**; artifact обоих runs независимо скачан и сверён (2,229 файлов, 287 hidden `.next`, exact `BUILD_ID`, полный SHA-256 manifest)
+- Host monitor corrections: PR #2 `84b3910` (RestrictSUIDSGID ломал runuser) и PR #3 `7273832` (явный `User=` + `NoNewPrivileges` + seccomp-опция очищают CAP_SETUID в systemd 255) — оба merged с green required CI; live-подтверждение: 4 последовательных 5-минутных таймерных цикла healthy, exact-SHA marker, `pm2Restarts` = baseline 2
+- Live drills новым комплектом: forward `0877ada`, rollback `0ab55a6` за 2.95 s, forward обратно за 7.20 s; clean-env PM2 (SSH-переменные удалены из process и dump); certbot simulated renewal с рабочим deploy-hook; активный vhost байт-в-байт равен holding
 - Public state: **holding**, не production launch
 
 ## 1. Release provenance
@@ -14,6 +18,24 @@
 - standalone artifact: 2,226 файлов, 52 static assets, полный `ARTIFACT.sha256`, отсутствуют writable mode bits и три распознанных local secret values;
 - server повторно выполнил `sha256sum --check`; release directory `0555 root:root`, файлы `0444 root:root`.
 - `main` защищён: required status `verify`, strict/linear history, force-push и deletion запрещены.
+
+### 1.1 GitHub artifact round-trip finding
+
+После первоначального утверждения RC скачивание artifact из successful run `29458837978` выявило, что `actions/upload-artifact` с default `include-hidden-files: false` исключал вложенный `.next`. Локальный и server artifacts не затронуты: они передавались из полного проверенного standalone tree и повторно сверялись по manifest на сервере. Однако скачанная из GitHub копия содержала 1,946 файлов вместо полного набора и не имела `.next/BUILD_ID`, поэтому не считалась deployable provenance evidence.
+
+Первичная коррекция в `4966680`:
+
+- official GitHub actions обновлены до актуальных major versions и закреплены полными commit SHA;
+- upload явно включает hidden files после полного secret/manifest scan;
+- тот же job скачивает artifact обратно;
+- отдельный verifier требует `server.js`, `.next/BUILD_ID`, непустой `.next/static`, exact commit SHA и совпадение полного `ARTIFACT.sha256`;
+- локальная negative-проверка подтвердила, что прежняя 1,946-файловая копия отвергается, а полный 2,226-файловый artifact принимается.
+
+Remote run `29459407641` корректно не дошёл до upload/download: WebKit один раз принял изменение поля до завершения calculator hydration, и результат не обновился. Это классифицировано как product readiness race, а не скрыто retry. PR #1 делает SSR calculator subtree `inert + aria-busy` до завершения hydration, публикует явный readiness marker и ждёт его в E2E. Исправленный сценарий прошёл 10 последовательных WebKit повторов и полный локальный matrix 75 passed / 6 intentional skips.
+
+Повторный platform audit также обнаружил транзакционные и operational P1: непроверенный fallback activation, rollback без восстановления original release при failure, неполный server inventory/ownership guard, наследование SSH environment в PM2, отсутствие атомарного public switch, cert deploy hook, host resource/restart/5xx monitoring и CI-проверок ops templates. Все исправления вошли в PR #1 (merged `0877ada`) и **развёрнуты live**: ops bundle установлен с per-file SHA-256 сверкой против green main, guard прошёл по всем трём server releases, hardened PM2 unit перезапущен, drills выполнены под holding.
+
+Host monitor потребовал двух дополнительных исправлений, найденных только живым запуском (оба — несовместимость systemd-hardening с намеренным `runuser` privilege drop): `RestrictSUIDSGID=true` (PR #2) и явный `User=root`+`NoNewPrivileges`+seccomp-опция, при которых systemd 255 очищает CAP_SETUID из effective set (PR #3; корень доказан бисекцией transient-юнитов, strace и `/proc/self/status`). Оба раза сервис падал fail-closed без ложного healthy marker. После установки из green main таймер подтверждён четырьмя последовательными циклами.
 
 ## 2. Candidate и process isolation
 

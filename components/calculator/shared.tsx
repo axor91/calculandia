@@ -161,6 +161,47 @@ export function Field({
   );
 }
 
+export function TextareaField({
+  label,
+  value,
+  onChange,
+  hint,
+  rows = 4,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  hint?: string;
+  rows?: number;
+}) {
+  const id = useId();
+  const formError = useContext(CalculatorErrorContext);
+  const hintId = hint ? `${id}-hint` : undefined;
+  const describedBy =
+    [hintId, formError.errorId].filter(Boolean).join(" ") || undefined;
+  return (
+    <div className="block">
+      <label htmlFor={id} className="mb-2 block text-sm font-bold text-ink">
+        {label}
+      </label>
+      <textarea
+        id={id}
+        name={id}
+        value={value}
+        onChange={(event) => onChange(event.target.value.slice(0, 512))}
+        rows={rows}
+        aria-describedby={describedBy}
+        className="w-full rounded-xl border border-line-strong bg-paper px-4 py-3 text-base font-semibold text-ink shadow-[0_1px_0_rgba(20,32,29,.04)] transition-colors hover:border-teal focus:border-teal"
+      />
+      {hint ? (
+        <span id={hintId} className="mt-1.5 block text-xs leading-5 text-muted">
+          {hint}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 export function SelectField({
   label,
   value,
