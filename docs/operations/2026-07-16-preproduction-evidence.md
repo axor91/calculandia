@@ -2,7 +2,8 @@
 
 - Дата: 2026-07-16
 - Первый healthy release: `bdd7c4ce7ca1643c98e734ca20e8273fca423292`
-- Текущий internal release: `0877adaefbf4c492192a79c12cf072053083a155` (предыдущие healthy: `0ab55a6`, `bdd7c4c` сохранены для rollback)
+- Текущий internal release: `f4762df17ce2655cd624ba097e3a0b3d86a2f80d` — каталог Wave 2 (30 калькуляторов, 41 URL); предыдущие healthy `0877ada`, `0ab55a6`, `bdd7c4c` сохранены для rollback
+- Wave 2 deploy evidence (2026-07-17, всё под holding): exact-main [run 29555209305](https://github.com/axor91/calculandia/actions/runs/29555209305) success; artifact независимо скачан и сверён вне CI (2,401 файлов, 101 static assets, exact `BUILD_ID`, полный SHA-256 manifest); server guard подтвердил дерево; транзакционная активация 7.4 s; drill rollback → `0877ada` 3.58 s / forward 6.23 s с exact health в обе стороны; публичный ответ оставался `503`; host-check отдаёт healthy marker с новым SHA. PM2 restart count после drill = 5 — **launch baseline для `PRODUCTION_PM2_RESTART_BASELINE` фиксировать на момент включения remote monitor**
 - Remote: private `github.com/axor91/calculandia`, ветка `main`
 - CI: [application run 29456296520](https://github.com/axor91/calculandia/actions/runs/29456296520), [operations run 29457751989](https://github.com/axor91/calculandia/actions/runs/29457751989) и [restricted-log run 29458837978](https://github.com/axor91/calculandia/actions/runs/29458837978) — **success**
 - Artifact round-trip correction: `4966680`, [run 29459407641](https://github.com/axor91/calculandia/actions/runs/29459407641) — **failed before upload/download** на WebKit hydration readiness race
