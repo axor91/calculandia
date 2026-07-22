@@ -1,7 +1,7 @@
 # Production design и runbook
 
 - Статус: **RC `0877ada` установлен и healthy (loopback); hardening PR #1–#3 merged и доказаны live; valid-TLS holding active; public launch blocked by legal/operator input**
-- Target: `calculandia.ru` / `203.0.113.20`
+- Target: `calculandia.ru` / `203.0.113.10`
 
 ## 1. Подтверждено
 
