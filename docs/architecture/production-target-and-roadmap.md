@@ -21,7 +21,7 @@
 - Рабочие дни РФ и solver уравнений не публикуются.
 - Формулы выполняются в браузере; пользовательские значения не отправляются серверу.
 - Единственный launch POST endpoint принимает только same-origin JSON allowlist-событие технической ошибки без message, stack, query, fragment и значений полей; тело ограничено 1 KiB, частота — 10 принятых событий в минуту на client bucket и 300 в минуту на процесс.
-- Deploy target — проверенный сервер `5.188.28.98`, nginx/FastPanel + PM2 + Next standalone на side-by-side Node 22.22.2.
+- Deploy target — проверенный сервер `5.188.30.214`, nginx/FastPanel + PM2 + Next standalone на side-by-side Node 22.22.2.
 
 Нормативные ADR перечислены в [`../README.md`](../README.md).
 

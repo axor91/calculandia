@@ -24,7 +24,7 @@ jobs:
     env:
       RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
       RELEASE_RUN_ID: ${{ github.event.workflow_run.id }}
-      SERVER: 5.188.28.98
+      SERVER: 5.188.30.214
     steps:
       - name: Prepare SSH identity
         env:

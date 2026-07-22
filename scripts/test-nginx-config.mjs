@@ -11,8 +11,8 @@ let supportsHttp2Directive = false;
 
 function productionSafeConfig(source) {
   let transformed = source
-    .replaceAll("5.188.28.98:80", "127.0.0.1:18080")
-    .replaceAll("5.188.28.98:443", "127.0.0.1:18443")
+    .replaceAll("5.188.30.214:80", "127.0.0.1:18080")
+    .replaceAll("5.188.30.214:443", "127.0.0.1:18443")
     .replaceAll(
       "/etc/letsencrypt/live/calculandia.ru/fullchain.pem",
       certificate,

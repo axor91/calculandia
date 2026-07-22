@@ -40,7 +40,7 @@ restrict,command="/usr/local/sbin/calculandia-ssh-gate" ssh-ed25519 <публи�
 
 ## Ручной fallback
 
-Автодеплой не отменяет ручной путь (см. [`production-design.md`](production-design.md) §5): все скрипты остаются пригодными для запуска руками по SSH. Мгновенный откат: `ssh root@5.188.28.98` (обычным админским ключом) → `calculandia-rollback <предыдущий sha>`, либо через deploy-ключ: `ssh root@5.188.28.98 rollback <sha>`.
+Автодеплой не отменяет ручной путь (см. [`production-design.md`](production-design.md) §5): все скрипты остаются пригодными для запуска руками по SSH. Мгновенный откат: `ssh root@5.188.30.214` (обычным админским ключом) → `calculandia-rollback <предыдущий sha>`, либо через deploy-ключ: `ssh root@5.188.30.214 rollback <sha>`.
 
 ## Провижининг (выполняется один раз)
 
@@ -48,4 +48,4 @@ restrict,command="/usr/local/sbin/calculandia-ssh-gate" ssh-ed25519 <публи�
 2. Добавить deploy-строку в `authorized_keys` root.
 3. Создать fine-grained PAT (repo `axor91/calculandia`, permission **Actions: read-only**) → `/etc/calculandia/github-token` (0600 root).
 4. Создать Environment `production` (branch policy: только `main`) и секреты `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`, `VARS_TOKEN`.
-5. Прогнать `ssh -i <deploy-key> root@5.188.28.98 status` и негативные проверки (мусорная команда → отказ; чужой run-id → отказ).
+5. Прогнать `ssh -i <deploy-key> root@5.188.30.214 status` и негативные проверки (мусорная команда → отказ; чужой run-id → отказ).

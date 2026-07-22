@@ -5,7 +5,7 @@
 
 ## Проверенный контур
 
-- Server: `5.188.28.98`, Ubuntu/Linux, nginx/FastPanel.
+- Server: `5.188.30.214`, Ubuntu/Linux, nginx/FastPanel.
 - Доступен SSH alias `kappers-prod` с root-доступом.
 - Глобальный Node на сервере: `v20.20.2`; он не подходит как поддерживаемый runtime launch и используется другими приложениями.
 - PM2 используется для существующих Node-приложений.
