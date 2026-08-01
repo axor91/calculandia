@@ -1,11 +1,15 @@
 # Автодеплой (Phase 2 ревизии деплоя)
 
-- Статус: **Degraded** (с 2026-07-22, переезд сервера) — цепочка до сервера доходит, серверная транзакция не выполняется
-- Блокер: `/etc/calculandia/github-token` на 203.0.113.10 отсутствует (при переезде не перенесён) → `calculandia-deploy-release` падает на первом шаге. Нужен fine-grained PAT (repo `axor91/calculandia`, **Actions: read-only**) от владельца, дальше см. «Провижининг» п. 3.
-- Что уже восстановлено 2026-08-01: секрет `DEPLOY_KNOWN_HOSTS` перевыпущен на host-ключи нового сервера (ECDSA+RSA, fingerprints сверены с `/etc/ssh/ssh_host_*_key.pub` на самом хосте — до этого workflow падал с `No ECDSA host key is known`); из main с sha256-сверкой установлены `/etc/calculandia/ecosystem.config.cjs`, `/etc/calculandia/nginx/production.conf`, `/etc/calculandia/nginx/holding.conf` (весь каталог `/etc/calculandia` отсутствовал; PM2 жил на перенесённом `dump.pm2`).
-- Ручной деплой релиза `640823d` (2026-08-01) выполнен по [ручному fallback](#ручной-fallback): артефакт из green `release`-рана → guard → `calculandia-activate` → `calculandia-publish` (external smoke 41 URL).
+- Статус: **Active** — восстановлен 2026-08-01 после переезда сервера (22.07), сквозной прогон подтверждён на релизе `c9bd722` (`DEPLOY_OK`, external smoke 41 URL).
+- Цепочка: merge в `main` → workflow `release` (артефакт + браузерная матрица) → workflow `deploy` (`workflow_run`, только completed+success push в main) → SSH forced-command → серверная транзакция → независимая внешняя верификация → обновление monitor-переменных.
+- **`/etc/calculandia/github-token` истекает 2027-07-30** (fine-grained PAT, repo `axor91/calculandia`, Actions: read-only). После этой даты `deploy` начнёт падать на первом шаге — перевыпустить по «Провижинингу» п. 3.
+- `VARS_TOKEN` в Environment `production` не задан, поэтому `PRODUCTION_RELEASE_SHA` и `PRODUCTION_PM2_RESTART_BASELINE` после каждого деплоя обновляются вручную (workflow об этом явно пишет в лог).
 
-- Цепочка (целевая): merge в `main` → workflow `release` (артефакт + браузерная матрица) → workflow `deploy` (`workflow_run`, только completed+success push в main) → SSH forced-command → серверная транзакция → независимая внешняя верификация → автообновление monitor-переменных.
+### Что чинилось 2026-08-01 (следы переезда)
+
+- Секрет `DEPLOY_KNOWN_HOSTS` остался от старого сервера → `No ECDSA host key is known`. Перевыпущен на host-ключи 203.0.113.10, fingerprints сверены с `/etc/ssh/ssh_host_*_key.pub` на самом хосте.
+- Каталог `/etc/calculandia` отсутствовал целиком (PM2 жил на перенесённом `dump.pm2`). Из main с sha256-сверкой установлены `ecosystem.config.cjs`, `nginx/production.conf`, `nginx/holding.conf`, затем владельцем выдан PAT.
+- Пока PAT не было, релиз `640823d` задеплоен [ручным fallback](#ручной-fallback): артефакт из green `release`-рана → guard → `calculandia-activate` → `calculandia-publish`.
 
 ## Серверная сторона
 
