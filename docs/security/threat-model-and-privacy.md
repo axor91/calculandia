@@ -4,14 +4,15 @@
 
 ## 1. Data inventory
 
-| Data                  | Где возникает                 | Куда передаётся                                | Retention                                                                             |
-| --------------------- | ----------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Значения калькулятора | Browser state                 | Никуда автоматически                           | До закрытия/сброса страницы                                                           |
-| Shared calculation    | URL fragment по явному copy   | Получателю ссылки; сервер fragment не получает | Контролирует пользователь/browser history                                             |
-| HTTP metadata         | nginx/Next logs               | Server logs                                    | 14 дней initial, без query/fragment values                                            |
-| Error event           | Browser/Next error boundary   | Same-origin endpoint → server logs             | 14 дней initial; только source/context/digest, без message/stack/input/query/fragment |
-| Contact message       | Launch scope не включает form | —                                              | —                                                                                     |
-| Analytics/Replay/Ads  | Отключены                     | —                                              | —                                                                                     |
+| Data                  | Где возникает                                             | Куда передаётся                                | Retention                                                                             |
+| --------------------- | --------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Значения калькулятора | Browser state                                             | Никуда автоматически                           | До закрытия/сброса страницы                                                           |
+| Shared calculation    | URL fragment по явному copy                               | Получателю ссылки; сервер fragment не получает | Контролирует пользователь/browser history                                             |
+| HTTP metadata         | nginx/Next logs                                           | Server logs                                    | 14 дней initial, без query/fragment values                                            |
+| Error event           | Browser/Next error boundary                               | Same-origin endpoint → server logs             | 14 дней initial; только source/context/digest, без message/stack/input/query/fragment |
+| Contact message       | Launch scope не включает form                             | —                                              | —                                                                                     |
+| Analytics/Replay      | Яндекс Метрика 111212984 (webvisor/clickmap) с 2026-08-01 | `mc.yandex.*`/`mc.webvisor.*` (ООО «Яндекс»)   | По правилам Метрики; вне контроля Calculandia                                         |
+| Ads                   | Отключены                                                 | —                                              | —                                                                                     |
 
 ## 2. Trust boundaries
 
@@ -35,17 +36,17 @@ External data API, CMS and runtime DB отсутствуют в launch boundary.
 
 ## 3. Assets и угрозы
 
-| Asset                   | Угроза                                                 | Control                                                                                                                        |
-| ----------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| Правильность результата | Формульная/округляющая ошибка                          | Golden/property tests, version/review workflow, visible assumptions                                                            |
-| Индексируемый контент   | Stored XSS/JSON-LD injection                           | Нет user/admin HTML; typed render; safe JSON serialization                                                                     |
-| Доступность             | Expensive input/main-thread DoS                        | Schema limits, submit boundary, schedule row cap, nginx timeouts                                                               |
-| Доступность логов       | Cross-site poisoning, quota starvation, oversized body | Same-origin JSON/fetch-metadata gate, stream limit 1 KiB, allowlist, 10/min/client + 300/min global, nginx per-IP limit        |
-| Privacy                 | Утечка финансовых значений в logs/analytics/referrer   | Client-only calculation, fragments, no Replay/analytics, log redaction                                                         |
-| Supply chain            | Vulnerable dependency/lock tampering                   | Lockfile, CI audit, minimal dependencies, exception expiry                                                                     |
-| Deploy                  | Compromised/mutable artifact or forged release ID      | Git-bound BUILD_ID, full SHA-256 manifest, no writable mode bits, root-owned release, dedicated runtime user, symlink rollback |
-| TLS/canonical           | MITM/duplicate indexation                              | ACME cert, HTTPS/non-www redirects, automated checks                                                                           |
-| Secrets                 | Fallback/committed env                                 | `.env*` ignored except example, env validation, mode 0600                                                                      |
+| Asset                   | Угроза                                                 | Control                                                                                                                                                                             |
+| ----------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Правильность результата | Формульная/округляющая ошибка                          | Golden/property tests, version/review workflow, visible assumptions                                                                                                                 |
+| Индексируемый контент   | Stored XSS/JSON-LD injection                           | Нет user/admin HTML; typed render; safe JSON serialization                                                                                                                          |
+| Доступность             | Expensive input/main-thread DoS                        | Schema limits, submit boundary, schedule row cap, nginx timeouts                                                                                                                    |
+| Доступность логов       | Cross-site poisoning, quota starvation, oversized body | Same-origin JSON/fetch-metadata gate, stream limit 1 KiB, allowlist, 10/min/client + 300/min global, nginx per-IP limit                                                             |
+| Privacy                 | Утечка финансовых значений в logs/analytics/referrer   | Client-only calculation, fragments, log redaction; с 2026-08-01 подключена Яндекс Метрика с Вебвизором — replay пишет ввод в поля, см. `docs/legal/production-privacy-checklist.md` |
+| Supply chain            | Vulnerable dependency/lock tampering                   | Lockfile, CI audit, minimal dependencies, exception expiry                                                                                                                          |
+| Deploy                  | Compromised/mutable artifact or forged release ID      | Git-bound BUILD_ID, full SHA-256 manifest, no writable mode bits, root-owned release, dedicated runtime user, symlink rollback                                                      |
+| TLS/canonical           | MITM/duplicate indexation                              | ACME cert, HTTPS/non-www redirects, automated checks                                                                                                                                |
+| Secrets                 | Fallback/committed env                                 | `.env*` ignored except example, env validation, mode 0600                                                                                                                           |
 
 ## 4. Abuse cases
 
@@ -55,15 +56,15 @@ External data API, CMS and runtime DB отсутствуют в launch boundary.
 - Direct admin/content API probes: production routes отсутствуют и возвращают 404; только документированный telemetry POST существует.
 - Framing/clickjacking: CSP `frame-ancestors 'none'`.
 - Script injection through structured data: trusted definitions + `<` escaping.
-- Error report с input state: client формирует новый allowlist object, а сервер отклоняет дополнительные поля; message/stack/query/fragment не принимаются; Replay disabled.
+- Error report с input state: client формирует новый allowlist object, а сервер отклоняет дополнительные поля; message/stack/query/fragment не принимаются; в error-репортинге replay не используется (Вебвизор Метрики — отдельный внешний канал, см. §5).
 - Cross-site error report: отклоняется до parsing/rate counter; исчерпание одного client bucket не блокирует другой bucket.
 - Forged `APP_RELEASE`: health не читает runtime release env и возвращает только immutable `.next/BUILD_ID`.
 
 ## 5. Privacy/legal boundary
 
-Документ фиксирует технический data design, но не является юридическим заключением. Перед подключением analytics, ads, contact forms или user accounts требуется отдельная правовая проверка применимых требований, обновление политики и назначение data owner.
+Документ фиксирует технический data design, но не является юридическим заключением. Перед подключением ads, contact forms или user accounts требуется отдельная правовая проверка применимых требований, обновление политики и назначение data owner.
 
-На launch необязательных trackers нет, поэтому блокирующий consent banner не нужен.
+С 2026-08-01 на сайте работает Яндекс Метрика (счётчик 111212984, webvisor/clickmap): это внешний оператор, свои cookies и запись действий на странице. CSP расширен доменами `mc.yandex.*`, `mc.webvisor.*`, `yastatic.net` в `script-src`/`img-src`/`frame-src`/`connect-src` (`frame-ancestors 'none'` и `object-src 'none'` не менялись). Consent banner не внедрён — документированное решение владельца, см. `docs/legal/production-privacy-checklist.md` §6.
 
 До Production Gate требуется указать проверяемые данные владельца/оператора, статус и адрес, действующий privacy contact, основания/цели/сроки обработки технических метаданных и порядок реализации прав пользователя. Эти данные нельзя выводить из Git nickname или придумывать. Пока владелец не предоставил их и текст не прошёл legal review, публичный launch блокируется независимо от технической готовности.
 
