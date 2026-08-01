@@ -16,7 +16,7 @@
 
 Повторный audit выявил transactional/inventory/monitoring gaps в прежних scripts. Исправления merged в PR #1 (`0877ada`), установлены на сервер из green main с per-file SHA-256 сверкой и доказаны live drill'ами. Host monitor дополнительно исправлен PR #2/#3 (несовместимости systemd-hardening с runuser privilege drop) и работает на 5-минутном таймере; см. [`2026-07-16-preproduction-evidence.md`](2026-07-16-preproduction-evidence.md).
 
-Mutable launch data отсутствуют, поэтому отдельный application backup не требуется; Git и immutable releases обеспечивают RPO 0 для публичного контента. External GitHub monitor реализован, но намеренно отключён repository variable до публичного proxy switch, чтобы holding `503` не создавал ложные incidents. Состояние других сайтов не используется как доказательство готовности Calculandia.
+Mutable launch data отсутствуют, поэтому отдельный application backup не требуется; Git и immutable releases обеспечивают RPO 0 для публичного контента. External GitHub monitor существовал до 2026-08-01 и удалён (см. §7). Состояние других сайтов не используется как доказательство готовности Calculandia.
 
 ## 2. Layout
 
@@ -127,18 +127,21 @@ Target rollback time: ≤10 минут. Поскольку mutable launch DB о�
 
 Version читается из read-only `.next/BUILD_ID`; `APP_RELEASE` и другие runtime env не могут его подменить. Отсутствующий/невалидный BUILD_ID даёт 503. Endpoint не раскрывает env, paths, dependency versions или host details.
 
-Local root timer каждые пять минут проверяет exact loopback release, systemd/PM2 online state, `unstable_restarts`, disk (<92%, warning с 88%), доступную память (≥256 MiB) и production nginx 5xx rate. Atomic `/host-healthz` marker содержит только status, release, epoch freshness и PM2 restart count; при ошибке marker удаляется. GitHub требует marker не старше 660 секунд и restart count, равный launch baseline.
+Local root timer каждые пять минут проверяет exact loopback release, systemd/PM2 online state, `unstable_restarts`, disk (<92%, warning с 88%), доступную память (≥256 MiB) и production nginx 5xx rate. Atomic `/host-healthz` marker содержит только status, release, epoch freshness и PM2 restart count; при ошибке marker удаляется. Deploy требует marker не старше 660 секунд и совпадения release.
 
-Minimum monitoring:
+### Scheduled remote monitor удалён (2026-08-01)
 
-- external HTTPS/health/sitemap check из отдельной GitHub infrastructure каждые 30 минут и вручную при deploy;
-- certificate expiry alert;
-- PM2 process status/restarts;
-- nginx 5xx rate;
-- disk/memory alerts;
+Workflow `production-monitor` (внешний HTTPS/health/sitemap/TLS-check каждые 30 минут) и переменные `PRODUCTION_MONITOR_ENABLED`, `PRODUCTION_RELEASE_SHA`, `PRODUCTION_PM2_RESTART_BASELINE` удалены по решению владельца: с 2026-07-20 монитор был выключен и не использовался, а его красные раны на деле сигнализировали о переполненном диске соседями, а не о состоянии Calculandia. Прежняя формулировка «неактивный remote monitor — release blocker» больше не действует.
+
+Что осталось из наблюдаемости:
+
+- локальный root timer + `/host-healthz` (питает deploy-гейт и доступен для ручной проверки);
+- синхронная внешняя верификация при каждом deploy: `/healthz` с exact SHA, свежесть `/host-healthz`, главная страница, external smoke 41 URL с автооткатом на holding;
+- PM2 process status/restarts и немедленный local restart;
+- nginx 5xx rate, disk/memory пороги внутри host-check;
 - sanitized structured server/client-boundary error logs без пользовательских значений.
 
-30-минутный interval удерживает scheduled private-repository job в пределах базовой GitHub Actions quota; переход на 1–5 минут требует отдельного внешнего provider или утверждённого бюджета. PM2 обеспечивает немедленный local restart, а deploy выполняет синхронный external smoke. Scheduled job активируется только `PRODUCTION_MONITOR_ENABLED=true` и требует точных `PRODUCTION_RELEASE_SHA` и `PRODUCTION_PM2_RESTART_BASELINE`; до launch он intentionally skipped. Перед launch вручную запускается failure simulation и подтверждается красный workflow; затем success run на production. Неактивный remote monitor является release blocker.
+Непокрытым остаётся **пассивный uptime-алертинг между деплоями**: если сайт ляжет в тихий период, никто не узнает до следующего деплоя или ручной проверки. Сознательный trade-off; при необходимости закрывается внешним uptime-провайдером, а не возвратом scheduled job. Certificate expiry также больше не проверяется автоматически — срок сертификата контролирует certbot-таймер на сервере.
 
 ## 8. RTO/RPO/SLO
 
