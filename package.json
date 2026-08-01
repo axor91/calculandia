@@ -9,7 +9,11 @@
   "packageManager": "npm@10.9.7",
   "overrides": {
     "tmp": "0.2.7",
-    "uuid": "11.1.1"
+    "uuid": "11.1.1",
+    "next": {
+      "postcss": "8.5.19"
+    },
+    "sharp": "0.35.3"
   },
   "scripts": {
     "dev": "next dev -p 3212",
@@ -21,7 +25,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "audit": "npm audit --audit-level=high",
-    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "audit:prod": "node scripts/audit-prod.mjs",
     "artifact:prepare": "node scripts/prepare-standalone.mjs",
     "artifact:verify": "node scripts/verify-standalone.mjs",
     "artifact:verify-uploaded": "node scripts/verify-uploaded-artifact.mjs",
@@ -42,7 +46,7 @@
     "check": "npm run check:release && npm run test:lighthouse"
   },
   "dependencies": {
-    "next": "15.5.20",
+    "next": "15.5.22",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },
@@ -58,7 +62,7 @@
     "autoprefixer": "10.5.3",
     "axe-core": "^4.12.1",
     "eslint": "9.39.2",
-    "eslint-config-next": "15.5.20",
+    "eslint-config-next": "15.5.22",
     "postcss": "8.5.19",
     "prettier": "3.9.5",
     "tailwindcss": "4.3.2",
