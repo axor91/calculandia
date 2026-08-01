@@ -1,9 +1,9 @@
 # Автодеплой (Phase 2 ревизии деплоя)
 
 - Статус: **Active** — восстановлен 2026-08-01 после переезда сервера (22.07), сквозной прогон подтверждён на релизе `c9bd722` (`DEPLOY_OK`, external smoke 41 URL).
-- Цепочка: merge в `main` → workflow `release` (артефакт + браузерная матрица) → workflow `deploy` (`workflow_run`, только completed+success push в main) → SSH forced-command → серверная транзакция → независимая внешняя верификация → обновление monitor-переменных.
+- Цепочка: merge в `main` → workflow `release` (артефакт + браузерная матрица) → workflow `deploy` (`workflow_run`, только completed+success push в main) → SSH forced-command → серверная транзакция → независимая внешняя верификация.
 - **`/etc/calculandia/github-token` истекает 2027-07-30** (fine-grained PAT, repo `axor91/calculandia`, Actions: read-only). После этой даты `deploy` начнёт падать на первом шаге — перевыпустить по «Провижинингу» п. 3.
-- `VARS_TOKEN` в Environment `production` не задан, поэтому `PRODUCTION_RELEASE_SHA` и `PRODUCTION_PM2_RESTART_BASELINE` после каждого деплоя обновляются вручную (workflow об этом явно пишет в лог).
+- Scheduled remote monitor и переменные `PRODUCTION_*` удалены 2026-08-01 (см. `production-design.md` §7); шаг обновления monitor-переменных из workflow `deploy` убран, `VARS_TOKEN` больше не нужен.
 
 ### Что чинилось 2026-08-01 (следы переезда)
 
@@ -41,7 +41,7 @@ restrict,command="/usr/local/sbin/calculandia-ssh-gate" ssh-ed25519 <публи�
 
 ## GitHub-сторона
 
-- Environment `production`: deploy-ключ (`DEPLOY_SSH_KEY`), pinned host key (`DEPLOY_KNOWN_HOSTS`), опционально `VARS_TOKEN` (fine-grained PAT, Variables: write) для автообновления `PRODUCTION_RELEASE_SHA` и `PRODUCTION_PM2_RESTART_BASELINE`. Без `VARS_TOKEN` шаг явно напоминает обновить переменные вручную.
+- Environment `production`: deploy-ключ (`DEPLOY_SSH_KEY`) и pinned host key (`DEPLOY_KNOWN_HOSTS`). Больше в environment ничего не требуется.
 - `concurrency: production-deploy`, `cancel-in-progress: false` — деплой не убивается посередине; серверный flock — второй барьер.
 - Build/test jobs секретов деплоя не видят: ключ существует только в environment job `deploy`.
 - После серверного `DEPLOY_OK` runner независимо проверяет снаружи `/healthz` (exact SHA), `/host-healthz` (freshness ≤660 c) и главную страницу.
@@ -55,5 +55,5 @@ restrict,command="/usr/local/sbin/calculandia-ssh-gate" ssh-ed25519 <публи�
 1. Установить gate и orchestrator на сервер из green main с per-file SHA-256 сверкой; `chmod 0755`, owner root.
 2. Добавить deploy-строку в `authorized_keys` root.
 3. Создать fine-grained PAT (repo `axor91/calculandia`, permission **Actions: read-only**) → `/etc/calculandia/github-token` (0600 root).
-4. Создать Environment `production` (branch policy: только `main`) и секреты `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`, `VARS_TOKEN`.
+4. Создать Environment `production` (branch policy: только `main`) и секреты `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`.
 5. Прогнать `ssh -i <deploy-key> root@203.0.113.10 status` и негативные проверки (мусорная команда → отказ; чужой run-id → отказ).
