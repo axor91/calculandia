@@ -31,7 +31,11 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
         run: |
           set -euo pipefail
-          flags="$(git diff --name-only "origin/${BASE_REF}...HEAD" | node scripts/classify-changes.mjs)"
+          # --name-status -z --find-renames: a rename must expose BOTH endpoints,
+          # otherwise moving app code to docs/ reads as a docs-only change and
+          # switches the app gates off. Keep in sync with GIT_DIFF_ARGS in
+          # scripts/classify-changes.mjs (asserted by tests/classifyChanges.test.ts).
+          flags="$(git diff --name-status -z --find-renames "origin/${BASE_REF}...HEAD" | node scripts/classify-changes.mjs)"
           echo "classification: $flags"
           for key in docs ops app dependencies; do
             value="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1])[process.argv[2]]))' "$flags" "$key")"
