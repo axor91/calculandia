@@ -50,6 +50,11 @@ jobs:
       - run: npm run build
         env:
           NEXT_PUBLIC_SITE_URL: https://calculandia.ru
+          # Реклама РСЯ включается repository variables, без правки кода.
+          # Пусто — реклама выключена; см. docs/operations/yandex-ads-setup.md.
+          NEXT_PUBLIC_YANDEX_RTB_CALCULATOR_TOP: ${{ vars.YANDEX_RTB_CALCULATOR_TOP }}
+          NEXT_PUBLIC_YANDEX_RTB_CALCULATOR_BOTTOM: ${{ vars.YANDEX_RTB_CALCULATOR_BOTTOM }}
+          YANDEX_ADS_TXT: ${{ vars.YANDEX_ADS_TXT }}
       - run: npm run smoke:standalone
       - run: node scripts/test-bundle-budget.mjs
       - run: npm run release:verify

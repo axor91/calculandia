@@ -8,10 +8,12 @@ import {
   type CalculatorSlug,
 } from "@/catalog";
 import CalculatorRunner from "@/components/calculator/CalculatorRunner";
+import AdSlot from "@/components/site/AdSlot";
 import Breadcrumbs from "@/components/site/Breadcrumbs";
 import CalculatorCard from "@/components/site/CalculatorCard";
 import Container from "@/components/site/Container";
 import JsonLd from "@/components/site/JsonLd";
+import { adBlockId } from "@/lib/ads";
 import { createPageMetadata } from "@/lib/page-metadata";
 
 const canonicalOrigin = "https://calculandia.ru";
@@ -40,6 +42,10 @@ export default function CalculatorPage({ slug }: { slug: CalculatorSlug }) {
   const formulas = calculator.formulas ?? [
     { label: "Основная формула", expression: calculator.formula },
   ];
+  // Реклама стоит после расчёта и после статьи: до результата она перекрывала бы
+  // то, ради чего страницу открыли. Блоков нет — не будет и разметки под них.
+  const topAdBlockId = adBlockId("calculatorTop");
+  const bottomAdBlockId = adBlockId("calculatorBottom");
   const breadcrumbs = [
     { label: "Главная", href: "/" },
     { label: "Калькуляторы", href: "/kalkulyatory" },
@@ -95,6 +101,9 @@ export default function CalculatorPage({ slug }: { slug: CalculatorSlug }) {
 
       <Container className="pb-12 sm:pb-16">
         <CalculatorRunner component={calculator.component} />
+        {topAdBlockId ? (
+          <AdSlot blockId={topAdBlockId} className="mt-10 sm:mt-12" />
+        ) : null}
       </Container>
 
       <Container className="pb-16 sm:pb-24">
@@ -208,6 +217,10 @@ export default function CalculatorPage({ slug }: { slug: CalculatorSlug }) {
             </p>
           </aside>
         </div>
+
+        {bottomAdBlockId ? (
+          <AdSlot blockId={bottomAdBlockId} className="mt-12" />
+        ) : null}
 
         {related.length ? (
           <section className="mt-12">

@@ -44,6 +44,7 @@ Baseline исходного проекта зафиксирован коммит
 - [`decisions/0005-telemetry-and-user-data.md`](decisions/0005-telemetry-and-user-data.md) — privacy-first телеметрия без значений расчётов.
 - [`decisions/0006-production-deployment.md`](decisions/0006-production-deployment.md) — один выбранный production design.
 - [`decisions/0007-calculator-structured-data.md`](decisions/0007-calculator-structured-data.md) — тестируемый `WebApplication` для canonical calculator pages.
+- [`decisions/0008-yandex-advertising-network.md`](decisions/0008-yandex-advertising-network.md) — реклама РСЯ за переменной окружения, выключена по умолчанию.
 
 ## Термины статуса
 

@@ -9,7 +9,7 @@
 - Share-state создаётся только по явному действию пользователя и хранится во fragment URL.
 - Нельзя логировать значения полей, полный fragment, cookies или authorization headers.
 - Session Replay на launch запрещён.
-- Product analytics и рекламные trackers на launch не подключаются; consent UI не показывается без необязательных trackers.
+- Product analytics и рекламные trackers на launch не подключаются; consent UI не показывается без необязательных trackers. В части рекламы решение отменено [ADR-0008](0008-yandex-advertising-network.md) от 2026-08-13: блоки РСЯ включаются переменной окружения, по умолчанию выключены.
 - На launch ошибки сервера пишутся в структурированные server logs без message/stack/input; browser boundary отправляет на same-origin `POST /api/client-errors` только `source`, безопасный route context и framework digest.
 - Endpoint требует `application/json`, точный production Origin и `Sec-Fetch-Site: same-origin`; отклоняет неизвестные поля и тело больше 1 KiB.
 - Application limit: 10 принятых событий в минуту на trusted-proxy client address и отдельный global ceiling 300/minute/process. Адрес используется только как SHA-256 rate-limit key и не логируется. Nginx перезаписывает proxy headers и добавляет собственный per-IP limit.

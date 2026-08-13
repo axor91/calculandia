@@ -3,6 +3,7 @@ import "./globals.css";
 import SiteFooter from "@/components/site/SiteFooter";
 import SiteHeader from "@/components/site/SiteHeader";
 import JsonLd from "@/components/site/JsonLd";
+import YandexAds from "@/components/site/YandexAds";
 import YandexMetrika from "@/components/site/YandexMetrika";
 import { siteConfig } from "@/lib/site";
 
@@ -40,6 +41,7 @@ export default function RootLayout({
     <html lang="ru">
       <body className="flex min-h-dvh flex-col">
         <YandexMetrika />
+        <YandexAds />
         <a href="#main-content" className="skip-link">
           Перейти к содержанию
         </a>
