@@ -12,26 +12,7 @@ const BLOCKING_SEVERITIES = new Set(["high", "critical"]);
 
 // Каждая запись обязана иметь ссылку на раздел dependency-exceptions.md и expiry.
 // После expires гейт снова красный — исключение нужно пересмотреть, а не продлить молча.
-const ALLOWLIST = [
-  {
-    id: "GHSA-qx2v-qp2m-jg93",
-    package: "postcss",
-    expires: "2026-10-01",
-    exception: "DEP-2026-001",
-  },
-  {
-    id: "GHSA-6g55-p6wh-862q",
-    package: "postcss",
-    expires: "2026-10-01",
-    exception: "DEP-2026-001",
-  },
-  {
-    id: "GHSA-r28c-9q8g-f849",
-    package: "postcss",
-    expires: "2026-10-01",
-    exception: "DEP-2026-001",
-  },
-];
+const ALLOWLIST = [];
 
 function runAudit() {
   const result = spawnSync(

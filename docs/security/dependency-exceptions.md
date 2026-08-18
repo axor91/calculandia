@@ -4,6 +4,10 @@
 
 ## DEP-2026-001 — Next.js nested PostCSS
 
+> **ЗАКРЫТО 2026-08-18**: postcss обновлён до 8.5.23 (PR #20), все три
+> advisories устранены, записи удалены из ALLOWLIST `scripts/audit-prod.mjs`.
+> `audit:prod` проходит с нулём исключений.
+
 - Status: **Temporary accepted**
 - Opened: 2026-07-15
 - Renewed: 2026-08-01 (severity поднялась до high, добавлены два новых advisory)
