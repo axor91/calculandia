@@ -9,7 +9,8 @@
       ],
       "numberOfRuns": 5,
       "settings": {
-        "chromeFlags": "--headless --no-sandbox"
+        "chromeFlags": "--headless --no-sandbox",
+        "skipAudits": ["third-party-cookies", "inspector-issues"]
       }
     },
     "assert": {

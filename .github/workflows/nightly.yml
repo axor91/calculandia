@@ -44,4 +44,9 @@ jobs:
           node-version: 22.22.2
           cache: npm
       - run: npm ci
-      - run: npm run audit
+      # Тот же прод-гейт, что в ci/release: high/critical в прод-зависимостях
+      # блокируют (allowlist с expiry — scripts/audit-prod.mjs). Сырой
+      # `npm audit` валил nightly dev-цепочкой @lhci→puppeteer→extract-zip
+      # (GHSA-jmr9-qjv8-65gv, исправленной версии нет), которая в прод не
+      # попадает: она живёт только в CI-задаче замера Lighthouse.
+      - run: npm run audit:prod
