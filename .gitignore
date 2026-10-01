@@ -54,3 +54,6 @@ artifacts/
 .lighthouseci/
 /.playwright-mcp/
 /.codex-session/
+
+# Python CI tools
+__pycache__/

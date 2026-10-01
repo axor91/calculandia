@@ -1,6 +1,11 @@
 # Статус реализации
 
-Обновлено: 2026-07-17.
+Обновлено: 2026-10-01.
+
+Текущий Git/CI — private GitLab goghtools-group/calculandia, [runbook](../operations/auto-deploy.md).
+GitHub public сохранён как snapshot, Actions отключён. Полный MR/main CI и nightly
+выполняются на own runner. Next15.5.24/sharp0.35.4 закрывают audit findings без исключений.
+Таблица ниже сохраняет историю продуктовых gates, а не текущие счётчики тестов.
 
 | Gate                      | Статус                                 | Evidence                                                                                                                                                                                                                                      |
 | ------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -14,7 +19,7 @@
 
 ## External state
 
-- Git remote: private `github.com/axor91/calculandia`; `main` protected, required `verify` applies to admins, Actions require full-SHA pinning. Цепочка merged main: `0877ada` (hardening, PR #1) → `84b3910` (monitor RestrictSUIDSGID, PR #2) → `7273832` (monitor User=/CAP_SETUID, PR #3) — все с green required CI; артефакты обоих релизных SHA независимо скачаны и сверены (BUILD_ID + полный SHA-256 manifest).
+- Historical GitHub gates на этапе запуска: Цепочка merged main: `0877ada` (hardening, PR #1) → `84b3910` (monitor RestrictSUIDSGID, PR #2) → `7273832` (monitor User=/CAP_SETUID, PR #3) — все с green required CI; артефакты обоих релизных SHA независимо скачаны и сверены (BUILD_ID + полный SHA-256 manifest).
 - SSH production access: подтверждён через alias `kappers-prod`.
 - Production runtime: Node `22.22.2`, отдельный user/systemd/PM2 c clean environment (SSH-переменные удалены одноразовой перерегистрацией), immutable release виден в `/healthz`; приложение слушает только `127.0.0.1:3212`, наружу — через nginx; boot recovery проверен.
 - TLS: действующий Let's Encrypt для apex/www, simulated renewal green; deploy-hook реально выполняет `nginx -t` + reload.
@@ -22,11 +27,11 @@
 - Rollback/forward drill новым комплектом скриптов: `0877ada → 0ab55a6 → 0877ada`, 2.95 s / 7.20 s, exact symlink/BUILD_ID/health identity confirmed.
 - Host monitor: `calculandia-host-check.timer` каждые 5 минут; после двух исправлений (`RestrictSUIDSGID` и явный `User=` + `NoNewPrivileges` + seccomp → потеря CAP_SETUID в systemd 255) подтверждены 4 последовательных таймерных цикла healthy; marker exact-SHA, `pm2Restarts=2` = launch baseline. Диск 90% — warning-зона (критический порог 92%), нужна плановая чистка.
 - Lighthouse TBT-флейк на CI закрыт причинно: dynamic-чанки разрезаны с категорийных на per-калькуляторные, страница гидрирует только собственный компонент.
-- GitHub `main`: protected; required `verify`, `enforce_admins=true`, strict linear history, force-push/deletion disabled; Actions `sha_pinning_required=true`.
+- Текущий GitLab main: protected, FF merge, green pipeline required; shared runners выключены. GitHub main на read-only сверке01.10.2026 был unprotected; Actions отключён переносом.
 - Юридические данные оператора/privacy contact не предоставлены; публичный запуск 2026-07-17 выполнен по прямому решению владельца (documented risk acceptance, privacy checklist §6). Юридический хвост остаётся открытым пунктом: при предоставлении данных — обновить публичную privacy-страницу отдельным PR.
 
 ## Текущая работа
 
-1. Deploy-ревизия: Фазы 1–2 внедрены (см. [`../operations/auto-deploy.md`](../operations/auto-deploy.md)); автодеплой ждёт server-side GitHub token от владельца.
+1. GitLab release/deploy и nightly перенесены; актуальное обслуживание и recovery — [runbook](../operations/auto-deploy.md).
 2. Юридические данные оператора → privacy-страница (отложенный owner-ом пункт).
 3. Плановая чистка диска kappers-prod (90%, warning-зона).

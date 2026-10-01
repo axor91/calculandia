@@ -22,7 +22,13 @@ export function classifyChanges(paths) {
     },
     { test: (p) => !p.includes("/") && p.endsWith(".md"), apply: ["docs"] },
     { test: (p) => p.startsWith("ops/"), apply: ["ops"] },
-    { test: (p) => p.startsWith(".github/"), apply: ["ops"] },
+    {
+      test: (p) =>
+        p.startsWith(".github/") ||
+        p.startsWith(".ci/") ||
+        p === ".gitlab-ci.yml",
+      apply: ["ops"],
+    },
     { test: (p) => p.startsWith("scripts/"), apply: ["ops"] },
     { test: (p) => p.startsWith("app/"), apply: ["app"] },
     { test: (p) => p.startsWith("components/"), apply: ["app"] },

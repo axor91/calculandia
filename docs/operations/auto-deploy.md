@@ -1,59 +1,100 @@
-# Автодеплой (Phase 2 ревизии деплоя)
+# Автодеплой через GitLab
 
-- Статус: **Active** — восстановлен 2026-08-01 после переезда сервера (22.07), сквозной прогон подтверждён на релизе `c9bd722` (`DEPLOY_OK`, external smoke 41 URL).
-- Цепочка: merge в `main` → workflow `release` (артефакт + браузерная матрица) → workflow `deploy` (`workflow_run`, только completed+success push в main) → SSH forced-command → серверная транзакция → независимая внешняя верификация.
-- **`/etc/calculandia/github-token` истекает 2027-07-30** (fine-grained PAT, repo `axor91/calculandia`, Actions: read-only). После этой даты `deploy` начнёт падать на первом шаге — перевыпустить по «Провижинингу» п. 3.
-- Scheduled remote monitor и переменные `PRODUCTION_*` удалены 2026-08-01 (см. `production-design.md` §7); шаг обновления monitor-переменных из workflow `deploy` убран, `VARS_TOKEN` больше не нужен.
+С 01.10.2026 основной Git/CI — [goghtools-group/calculandia](https://gitlab.com/goghtools-group/calculandia).
+Проект приватный в действующей группе; публичный GitHub остаётся резервным снимком
+инженерной витрины, без Actions и автоматического зеркалирования. Архив прежнего
+процесса: [GitHub deploy](../archive/github-auto-deploy.md).
 
-### Что чинилось 2026-08-01 (следы переезда)
+## CI и выпуск
 
-- Секрет `DEPLOY_KNOWN_HOSTS` остался от старого сервера → `No ECDSA host key is known`. Перевыпущен на host-ключи 203.0.113.10, fingerprints сверены с `/etc/ssh/ssh_host_*_key.pub` на самом хосте.
-- Каталог `/etc/calculandia` отсутствовал целиком (PM2 жил на перенесённом `dump.pm2`). Из main с sha256-сверкой установлены `ecosystem.config.cjs`, `nginx/production.conf`, `nginx/holding.conf`, затем владельцем выдан PAT.
-- Пока PAT не было, релиз `640823d` задеплоен [ручным fallback](#ручной-fallback): артефакт из green `release`-рана → guard → `calculandia-activate` → `calculandia-publish`.
+MR и push в защищённый `main` проходят полный набор проверок в `.gitlab-ci.yml`:
 
-## Серверная сторона
+1. `quality`: format/lint/typecheck, Vitest coverage, artifact/ops/nginx contracts,
+   production dependency audit, docs links и тесты GitLab receiver.
+2. `artifact`: единственная Next standalone сборка, smoke, bundle budget,
+   clean Git SHA/BUILD_ID, полный manifest и read-only artifact; проверка публичных
+   файлов, упаковка вместе с метаданными job/pipeline/SHA и SHA256 архива.
+3. `e2e`: скачивает тот же архив из artifacts, повторяет полный manifest/BUILD_ID
+   verification, запускает Chromium, Firefox и WebKit. Штатные skips в browser
+   tests сохраняются; результат каждого браузера виден в JUnit.
+4. `deploy-production`: только protected push main после всех проверок; получает
+   protected file variables лишь в environment `production`, передаёт JSON по SSH
+   stdin и независимо проверяет публичные health/version/host freshness и HTTP200.
 
-| Компонент                    | Путь                                             | Обновление                                      |
-| ---------------------------- | ------------------------------------------------ | ----------------------------------------------- |
-| SSH-gate (bootstrap)         | `/usr/local/sbin/calculandia-ssh-gate`           | **только вручную** — намеренно не автодеплоится |
-| Orchestrator                 | `/usr/local/sbin/calculandia-deploy-release`     | из green main c hash-сверкой                    |
-| GitHub token (Actions: read) | `/etc/calculandia/github-token` (root:root 0600) | вручную владельцем                              |
+Все jobs на own runner56948440, tag `calculandia-check`, 2CPU/6GiB, без privileged
+и Docker socket; shared runners/AutoDevOps выключены, общий concurrent=2.
+Node22.22.2/npm10.9.7 одинаковы с прежним CI. Для browser/Lighthouse jobs явно
+заданы HOSTNAME=127.0.0.1 и PORT=3212: Docker HOSTNAME иначе уводит standalone
+server с loopback. GitLab Free не требует покупки минут.
+Merge только FF и при успешном pipeline. MR теперь проверяется целиком, а не
+сокращённо по классификации diff. Classification utility оставлен для локальной работы.
 
-`authorized_keys` (root) содержит ровно одну deploy-строку:
+Ночной schedule main: `23 2 * * *`, UTC. Два независимых jobs: `nightly-audit`
+и `nightly-performance` (Lighthouse, прежние пороги, 5 прогонов, медиана).
+Web pipeline запускает тот же nightly набор, без deploy. Artifacts: release и
+JUnit/coverage14дней, Lighthouse30дней, deploy receipt90дней. Старый remote uptime
+monitor не восстанавливается: его отключение владельцем остаётся в силе.
 
-```text
-restrict,command="/usr/local/sbin/calculandia-ssh-gate" ssh-ed25519 <публичный ключ> calculandia-deploy@github-actions
+## Production
+
+SSH alias `kappers-prod`, фактический адрес5.188.30.214; опубликованные старые
+203.0.113.10 — placeholder. Native Node/PM2, без сборки и runtime-БД на сервере.
+Immutable `/var/www/calculandia/releases/<sha>` и symlink `current` сохраняются.
+
+Новый root-owned receiver `.ci/receiver.py` установлен как
+`/usr/local/sbin/calculandia-gitlab-deploy` с mode0700; ключ в authorized_keys
+имеет `restrict,command="/usr/local/sbin/calculandia-gitlab-deploy"`.
+Принимается только `gitlab-release` и строго типизированный JSON; arbitrary shell,
+status/rollback через CI key, чужой job/project, MR/web pipeline и stale main отвергаются.
+
+Receiver проверяет running GitLab job через `/api/v4/job`, текущий main через
+read_repository token, метаданные artifact job того же pipeline/SHA, собственный
+SHA256 и SHA256/size архива. Загрузка не пересылает job token на внешний CDN.
+Распаковка ограничена200MiB gzip/1GiB total/40000entries/256MiB per file;
+links, devices, traversal, CR/LF names и env files запрещены.
+
+Один прежний `/run/lock/calculandia-release.lock` охватывает весь выпуск:
+immutable installation → существующий `calculandia-verify-release` →
+`calculandia-activate` (candidate3213, exact health, atomic symlink, clean-env PM2,
+встроенный rollback) → `calculandia-publish` (nginx reload, external smoke41URL,
+fail-closed holding) → свежий host-check. Эти серверные guards сверены с исходным
+кодом и не заменены переносом. Приложение слушает3212 только на loopback.
+
+В новом transport нет автоматического удаления старых releases: предыдущие
+артефакты сохраняются для отката. Контроль места выполняет host-check; перед
+ручной очисткой проверить current и сохранить предыдущий рабочий SHA.
+
+## Credentials и обновление receiver
+
+`PROD_DEPLOY_KEY` и `PROD_SSH_KNOWN_HOSTS`: protected file variables с environment
+scope `production`. Host keys прочитаны через административный SSH.
+`/root/.local/share/calculandia-gitlab` (0700) хранит read_repository credential
+(0600, token до01.10.2027), backup authorized_keys и sanitised receipts/private log.
+Token не даёт write/API прав; artifact скачивается краткоживущим CI_JOB_TOKEN.
+Старый GitHub deploy key отзывается после успешного GitLab выпуска; legacy gate
+и GitHub token не используются новой цепочкой, остаются только для истории/аварийного
+доступа администратора. Повторять прежний GitHub provisioning не нужно.
+
+Receiver не обновляет себя из artifacts. После изменения `.ci/receiver.py`
+установить проверенную копию через admin SSH и проверить hash/negative probes
+перед merge: несовпадение с metadata останавливает deploy до изменения `current`.
+
+## Восстановление
+
+При ошибке смотреть root-only receipt и last-command.log. Не публиковать tokens,
+полные process env и private logs. Неверный artifact не активируется. Ошибки
+активации восстанавливают previous через существующий script; ошибка publish
+возвращает holding. После устранения причины можно повторить job при том же main.
+
+Ручной rollback через административный SSH:
+
+```bash
+ssh kappers-prod
+calculandia-verify-release <previous-sha>
+calculandia-rollback <previous-sha>
+calculandia-publish <previous-sha>
 ```
 
-`restrict` отключает PTY/forwarding/rc; команда клиента игнорируется и доступна gate только как `SSH_ORIGINAL_COMMAND`. Gate принимает строго типизированные команды: `deploy <sha> <run-id>`, `status`, `rollback <sha>` — всё остальное отвергается.
-
-## Транзакция `calculandia-deploy-release <sha> <run-id>`
-
-Один `flock` на весь цикл (внутренние activate/publish переиспользуют удержанный lock через `CALCULANDIA_LOCK_HELD=1`):
-
-1. Верификация run через GitHub API read-only токеном: repository, `event=push`, `head_branch=main`, `head_sha=<sha>`, workflow `release`, `completed`+`success`.
-2. Поиск непросроченного артефакта `calculandia-<sha>` в этом run, границы размера.
-3. Скачивание в bounded staging; отказ на absolute/`..`-пути, symlink/special files, timeout распаковки; сверка `BUILD_ID`.
-4. Immutable-установка `releases/<sha>` (root:root 0555/0444) + полный server guard (`calculandia-verify-release`). Существующий каталог релиза принимается только если guard проходит (идемпотентный retry).
-5. `calculandia-activate` (candidate-порт, clean-env PM2, bounded exact health, транзакционный откат).
-6. `calculandia-publish` (ожидание активации production-конфига после graceful reload, полный external smoke 41 URL, автооткат на holding).
-7. Свежий host-check → в stdout `DEPLOY_OK sha=… pm2Restarts=…`.
-
-## GitHub-сторона
-
-- Environment `production`: deploy-ключ (`DEPLOY_SSH_KEY`) и pinned host key (`DEPLOY_KNOWN_HOSTS`). Больше в environment ничего не требуется.
-- `concurrency: production-deploy`, `cancel-in-progress: false` — деплой не убивается посередине; серверный flock — второй барьер.
-- Build/test jobs секретов деплоя не видят: ключ существует только в environment job `deploy`.
-- После серверного `DEPLOY_OK` runner независимо проверяет снаружи `/healthz` (exact SHA), `/host-healthz` (freshness ≤660 c) и главную страницу.
-
-## Ручной fallback
-
-Автодеплой не отменяет ручной путь (см. [`production-design.md`](production-design.md) §5): все скрипты остаются пригодными для запуска руками по SSH. Мгновенный откат: `ssh root@203.0.113.10` (обычным админским ключом) → `calculandia-rollback <предыдущий sha>`, либо через deploy-ключ: `ssh root@203.0.113.10 rollback <sha>`.
-
-## Провижининг (выполняется один раз)
-
-1. Установить gate и orchestrator на сервер из green main с per-file SHA-256 сверкой; `chmod 0755`, owner root.
-2. Добавить deploy-строку в `authorized_keys` root.
-3. Создать fine-grained PAT (repo `axor91/calculandia`, permission **Actions: read-only**) → `/etc/calculandia/github-token` (0600 root).
-4. Создать Environment `production` (branch policy: только `main`) и секреты `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`.
-5. Прогнать `ssh -i <deploy-key> root@203.0.113.10 status` и негативные проверки (мусорная команда → отказ; чужой run-id → отказ).
+Проверить `/healthz`, `/host-healthz` и внешний smoke. Сборка на production,
+подмена BUILD_ID или принудительное ослабление audit/manifest не допускаются.
+Подробности транзакции: [production-design.md](production-design.md).

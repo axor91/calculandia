@@ -1,16 +1,16 @@
 # Production design и runbook
 
-- Статус: **RC `0877ada` установлен и healthy (loopback); hardening PR #1–#3 merged и доказаны live; valid-TLS holding active; public launch blocked by legal/operator input**
-- Target: `calculandia.ru` / `203.0.113.10`
+- Статус: **Public production active; Git/CI и auto-deploy перенесены на GitLab01.10.2026. Текущий SHA читается из `/healthz`; прежние owner decisions по запуску/monitor сохраняются.**
+- Target: `calculandia.ru` / `kappers-prod` (5.188.30.214)
 
-## 1. Подтверждено
+## 1. Подтверждено (история развёртывания; текущий процесс ниже)
 
 - SSH alias `kappers-prod` работает с root access.
 - nginx активен и управляет FastPanel sites.
 - Глобальный Node `v20.20.2`, PM2 7 используются существующими приложениями. Node 20 уже EOL и не выбирается для Calculandia.
 - PostgreSQL и Redis существуют на сервере, но Calculandia launch их не использует.
 - `127.0.0.1:3212` занят healthy Calculandia process; candidate port `3213` после проверки освобождён.
-- Домен имеет отдельный holding vhost с валидным TLS и отвечает `503 + noindex`, пока production proxy не утверждён.
+- Домен работает через production proxy; holding503/noindex сохранён как fail-closed режим publish.
 - Node `22.22.2` установлен side-by-side с проверкой официального SHA-256; созданы непривилегированный user `calculandia` и изолированные release/state directories.
 - В репозитории зафиксированы проверяемые nginx/PM2/logrotate templates и fail-closed activate/rollback scripts в `ops/`.
 
@@ -55,35 +55,20 @@ Calculandia build/runtime используют Node `22.22.2` из `/opt/nodejs/
 - stdout/stderr проходят PM2 log rotation, secrets/input values не логируются.
 - candidate и PM2 CLI запускаются через `env -i`; SSH/deploy environment не наследуется приложением.
 
-## 4. nginx
+## 4. CI
 
-- port 80: ACME challenge и 301 на `https://calculandia.ru$request_uri`;
-- `www`: 301 на non-www;
-- canonical HTTPS server proxy на `127.0.0.1:3212`;
-- proxy headers Host/X-Forwarded-Proto; nginx задаёт `X-Real-IP $remote_addr` и `X-Forwarded-For $proxy_add_x_forwarded_for`, приложение использует последний trusted-proxy address и никогда его не логирует;
-- hashed `_next/static` — immutable one year;
-- HTML — no immutable, controlled revalidation;
-- общий request body limit ≤ 1 MiB; для `POST /api/client-errors` — отдельные nginx limit 1 KiB и per-IP rate limit; приложение требует same-origin JSON и повторно применяет 10/min/client + 300/min global;
-- connect/read/send timeouts;
-- application является единственным источником CSP/Referrer/Permissions/X-Content-Type headers; nginx добавляет только transport-specific HSTS после проверки HTTPS;
-- custom 502 не маскируется как 200.
-
-TLS: ACME/Let's Encrypt с автоматическим renew и проверкой `nginx -t`. Сертификат покрывает apex и `www`, даже если `www` только redirect.
-
-До legal/operator approval точный vhost может находиться только в holding-state: валидный TLS, `503 + Retry-After + X-Robots-Tag: noindex`; приложение при этом доступно лишь на loopback. Parking `200` не используется как ложный сигнал готовности.
-
-## 4a. CI pipeline (с 2026-07-17)
-
-- **PR-гейт** `production-gate`: job `classify` относит diff к классам docs/ops/app/dependencies (неизвестный путь fail-safe запускает полный набор; классификатор покрыт unit-тестами). По классам выполняются `docs-contract` (всегда: формат docs, целостность внутренних ссылок), `quality`, `build-smoke` (build, standalone smoke, gzip bundle-budget, Chromium E2E), `ops-check`, `dependency-audit`. Единственный required-контекст branch protection — `verify`: always-running агрегатор, который сверяет результат каждого job с классификацией (неожиданный skipped = fail). Playwright-браузеры кэшируются.
-- **Release** (push в main, non-cancellable): `quality` + `artifact` (build, `release:verify`, upload/download round-trip c exact `BUILD_ID` и полным SHA-256 manifest) → параллельная матрица `e2e` Chromium/Firefox/WebKit, каждая по скачанному exact-артефакту → `release-gate` (агрегатор; будущая точка привязки автодеплоя).
-- **Nightly**: Lighthouse 5 прогонов с медианной агрегацией и калиброванными бюджетами, отчёты сохраняются артефактами 30 дней; аудит зависимостей — тот же прод-гейт `npm run audit:prod`, что в ci/release (2026-08-20: сырой `npm audit` заменён — он валил nightly high-уязвимостями dev-цепочки `@lhci→puppeteer→extract-zip`, которая в прод-артефакт не попадает). Из подсчёта best-practices точечно исключены аудиты `third-party-cookies`/`inspector-issues` (`skipAudits`): все сторонние cookies на сайте — от Яндекс.Метрики, это свойство счётчика, а не дефект; пороги категорий не снижены. Performance-регрессии не блокируют срочный deploy — они алертят.
-- Бюджеты производительности на критическом пути: детерминированный gzip-размер First-Load JS (`scripts/test-bundle-budget.mjs`, baseline ~106.5 KiB, бюджет 125 KiB) вместо флейкующего TBT на shared runners.
+Актуальная спецификация GitLab jobs, расписания, runner и transport:
+[auto-deploy.md](auto-deploy.md). MR и protected main проходят полную приёмку;
+artifact скачивается и проверяется во всех трёх браузерах. Nightly сохраняет
+прежние Lighthouse budgets/median и строгий production audit. Shared runners
+отключены; CI выполняется на собственной VM. Прежние GitHub workflows сохранены
+в docs/archive/github-workflows как неисполняемые.txt.
 
 ## 5. Deployment sequence
 
-Стандартный путь — автоматический: см. [`auto-deploy.md`](auto-deploy.md) (workflow `deploy` выполняет шаги 2–13 серверной транзакцией после green `release`). Последовательность ниже остаётся нормативной спецификацией и ручным fallback.
+Стандартный путь — автоматический: см. [`auto-deploy.md`](auto-deploy.md) (GitLab `deploy-production` выполняет шаги 2–13 серверной транзакцией после green quality/artifact/e2e). Последовательность ниже остаётся нормативной спецификацией и ручным fallback.
 
-1. Local/CI release gates green (required `verify` на PR + `release-gate` на main).
+1. Local/CI release gates green (полный MR pipeline + quality/artifact/e2e на main).
 2. Создать standalone artifact из clean commit; build записывает `.next/BUILD_ID = SHA`, streaming scanner проверяет все файлы без size exception, затем создаётся и проверяется `ARTIFACT.sha256`.
 3. Передать в новый `/releases/{sha}` без изменения `current`; server guard повторно проверяет exact inventory, hashes, ownership, modes и равенство BUILD_ID/directory SHA.
 4. Установить `root:root`, directories `0555`, files `0444`; `sudo -u calculandia test ! -w release` и пробный create/modify обязаны завершиться отказом.
@@ -95,7 +80,7 @@ TLS: ACME/Let's Encrypt с автоматическим renew и проверк�
 10. `curl http://127.0.0.1:3212/healthz` ожидает 200 и тот же candidate SHA. Любая command/health/save failure транзакционно восстанавливает previous symlink/process и bounded exact health; непроверенный fallback возвращает critical exit 2.
 11. Host checker создаёт свежий exact-SHA marker; publish script атомарно ставит production config, выполняет `nginx -t`/reload и вооружает EXIT trap на known holding config.
 12. External smoke проверяет host/runtime health, все 25 sitemap URL, отсутствие noindex, canonical, schema, redirects, headers, TLS, robots, assets, sources и `404`. Любая ошибка автоматически возвращает holding и reload.
-13. Отдельный GitHub run подтверждает внешний контур; только после этого сохраняется evidence и release помечается public healthy.
+13. GitLab deploy job независимо подтверждает внешний контур; только после этого сохраняется evidence и release помечается public healthy.
 
 ## 6. Rollback
 
@@ -151,11 +136,14 @@ Workflow `production-monitor` (внешний HTTPS/health/sitemap/TLS-check к�
 - Mutable user data: отсутствуют.
 - Field performance SLO вводится после RUM; lab budgets находятся в UI spec.
 
-## 9. Git repository и release provenance
+## 9. Git и provenance
 
-Создан private repository `github.com/axor91/calculandia`, remote `origin` настроен, baseline и previous release candidate опубликованы в `main`. Branch protection подтверждён: required `verify` применяется к admins, strict linear history, force-push и deletion запрещены. Repository требует action SHA pinning; CI dependencies закреплены полными commit SHA. Загруженный release artifact обязан пройти download round-trip с exact `BUILD_ID` и полным manifest; первое remote доказательство ожидается от PR #1/main revalidation. До production release остаются:
+Primary: private https://gitlab.com/goghtools-group/calculandia, main protected,
+merge FF и green pipeline required. GitHub public — резервный снимок, Actions
+выключен; его historical protection/private статус не описывает текущее состояние.
+23 исходные remote ветки и3дополнительные локальные refs сохранены без merge.
 
-- успешный обязательный CI workflow на финальный policy/ops commit;
-- сохранение production SHA, идентичного remote commit, `.next/BUILD_ID` и release directory.
-
-Deploy напрямую из dirty tree или commit, отсутствующего в `origin/main`, запрещён.
+Deploy принимает только current main и artifact того же pipeline с exact SHA,
+BUILD_ID, SHA256 archive/full manifest. Server guards, immutable modes и runtime
+identity проверяются повторно; GitHub PAT больше не нужен активному deploy.
+Смена Git не восстанавливает отключённый remote monitor и не меняет owner decisions.

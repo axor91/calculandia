@@ -3,7 +3,9 @@
 - Статус: **Accepted**
 - Дата: 2026-07-15
 
-## Проверенный контур
+Обновление01.10.2026: GitLab CI/transport описан в [auto-deploy](../operations/auto-deploy.md); runtime/release/rollback решения сохранены.
+
+## Проверенный контур на дату ADR (история)
 
 - Server: `203.0.113.10`, Ubuntu/Linux, nginx/FastPanel.
 - Доступен SSH alias `kappers-prod` с root-доступом.

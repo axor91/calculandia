@@ -22,15 +22,19 @@
   критическом пути; Lighthouse — nightly, 5 прогонов, медиана.
 - **Релиз наблюдаем**: текущая версия всегда видна в `/healthz`.
 
-## CI: гейты разрезаны по классам изменений
+## Git и CI
 
-PR-гейт `production-gate` классифицирует diff (docs / ops / app /
-dependencies; неизвестные пути fail-safe запускают всё), выполняет только
-релевантные jobs и сводит их в единственный required-контекст `verify`.
-Релизный контур на push в `main`: сборка артефакта с download round-trip
-(`BUILD_ID` + полный SHA-256 manifest) и трёхбраузерная матрица **по
-скачанному артефакту**, а не по рабочей копии — тестируется ровно то, что
-поедет в прод.
+Основной репозиторий и CI — [GitLab](https://gitlab.com/goghtools-group/calculandia),
+приватный проект в группе владельца. Публичный GitHub сохраняет снимок инженерной
+витрины; Actions отключён, автоматического зеркалирования нет.
+
+MR и main проходят полный quality/coverage/ops/audit набор. Единственная сборка
+становится immutable artifact с точным BUILD_ID и SHA-256 manifest; скачанный
+artifact проверяется в Chromium, Firefox и WebKit. Protected push main автоматически
+выпускает этот же artifact через restricted receiver и существующие серверные
+activate/publish/rollback guards. Свой runner, без hosted minutes.
+Lighthouse и production audit работают по ночному расписанию02:23UTC.
+Текущий порядок и восстановление — [runbook](docs/operations/auto-deploy.md).
 
 Известные исключения безопасности документируются с дедлайном
 (high/critical блокируют гейт без исключений).

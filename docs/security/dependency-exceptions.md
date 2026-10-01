@@ -47,3 +47,18 @@ Advisory относятся к CSS stringify с неэкранированным
 - Path: `next@15.5.22 → sharp@0.34.4`
 
 `sharp` — optional-зависимость Next для image optimization; `next/image` в проекте не используется, но пакет присутствовал в production-дереве. Закрыто `overrides.sharp = "0.35.3"` (override применяется, дерево переустановлено и проверено `npm ls sharp`), без downgrade Next. При появлении поддержанного `sharp` в самом Next override снимается.
+
+## 01.10.2026 — patch update при переносе CI
+
+Nightly36840261851 блокировали три advisory в production dependency tree.
+Без расширения ALLOWLIST обновлены Next/eslint-config-next15.5.22 →15.5.24
+и override sharp0.35.3 →0.35.4; lockfile обновлён обычным npm install,
+без npm audit fix --force и без major upgrade. UI/формулы/контент не менялись.
+Проверка: npm run audit:prod и полный release CI перед выпуском.
+
+Источники диапазонов исправления:
+[Next Windows RCE](https://github.com/advisories/GHSA-p293-qw3h-jr36),
+[Next AVIF](https://github.com/advisories/GHSA-2xp9-vwfh-vxw4),
+[sharp/libheif](https://github.com/advisories/GHSA-rgj7-g3m4-5g8c).
+Windows-specific advisory не доказывает эксплуатацию на нашем Linux-хосте;
+пакеты обновлены, проверка не ослаблялась. Старые разделы выше — история решений.

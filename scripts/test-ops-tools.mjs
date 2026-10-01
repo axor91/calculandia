@@ -176,31 +176,19 @@ if (
   );
 }
 
-const { readdir } = await import("node:fs/promises");
-const workflowDir = path.join(projectRoot, ".github/workflows");
-const workflowFiles = (await readdir(workflowDir)).filter((name) =>
-  name.endsWith(".yml"),
+const pipeline = await readFile(
+  path.join(projectRoot, ".gitlab-ci.yml"),
+  "utf8",
 );
-let workflowsCombined = "";
-for (const name of workflowFiles) {
-  const contents = await readFile(path.join(workflowDir, name), "utf8");
-  workflowsCombined += contents;
-  const unpinned = contents.match(/uses:\s*[^@\s]+@(?![0-9a-f]{40}\b)\S+/g);
-  if (unpinned) {
-    throw new Error(
-      `GitHub action is not full-SHA pinned in ${name}: ${unpinned.join(", ")}`,
-    );
-  }
-}
-const release = await readFile(path.join(workflowDir, "release.yml"), "utf8");
-if (
-  !release.includes("include-hidden-files: true") ||
-  !release.includes("artifact:verify-uploaded")
-) {
-  throw new Error("Release artifact upload/download round-trip is incomplete");
-}
-if (!workflowsCombined.includes("cancel-in-progress: false")) {
-  throw new Error("Release pipeline must not be cancellable mid-run");
+for (const required of [
+  "artifact:verify-uploaded",
+  "interruptible: false",
+  "resource_group: calculandia-production",
+  "chromium firefox webkit",
+  "npm run audit:prod",
+]) {
+  if (!pipeline.includes(required))
+    throw new Error(`GitLab release contract missing: ${required}`);
 }
 
 // --- Failure injection: SSH forced-command gate must reject everything that
@@ -302,5 +290,5 @@ try {
 await rm(path.dirname(lockFile), { recursive: true, force: true });
 
 console.log(
-  "Ops tool tests passed: release guard negative fixtures, shell/PM2 syntax, gate/lock failure injection and full-SHA CI actions",
+  "Ops tool tests passed: release guard negative fixtures, shell/PM2 syntax, gate/lock failure injection and GitLab release contracts",
 );

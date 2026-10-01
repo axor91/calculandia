@@ -1,5 +1,8 @@
 # Документация Calculandia
 
+С01.10.2026 Git/CI/deploy: [актуальный GitLab runbook](operations/auto-deploy.md).
+GitHub материалы в archive исторические; runtime architecture/owner decisions сохраняются.
+
 Актуально на **16 июля 2026 года**.
 
 ## Статус
